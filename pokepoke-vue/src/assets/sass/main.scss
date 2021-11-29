@@ -1,0 +1,28 @@
+$green-colors: (
+    base: #7ba390,
+    light: #a6d1bc,
+    light-hover: #d5e5dc,
+    light-gray: #b9cbc2,
+    // dark: #636866,
+    dark: #52625b,
+    dark-hover: #a8b3ad,
+);
+@function green($key) {
+    @return map-get($green-colors, $key);
+}
+
+* {
+    font-weight: bold;
+}
+
+button {
+    background-color: white;
+    color: green(dark);
+    border: none;
+    cursor: pointer;
+    padding: 2px 10px;
+
+    &:hover {
+        color: green(dark-hover);
+    }
+}

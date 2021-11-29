@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    volumes:
+      # 初期データを投入するSQLが格納されているdir
+    #   - ./mysql/db/mysql_init:/docker-entrypoint-initdb.d
+      # 永続化するときにマウントするdir
+      - ./mysql/db/mysql_data:/var/lib/mysql
+      # mysql8は設定ファイルがいる
+      - ./mysql/db/mysql_conf/:/etc/mysql/conf.d
+    ports:
+      - "3306:3306"
+    networks:
+      - local-net
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+
+networks:
+  local-net:
+    driver: bridge

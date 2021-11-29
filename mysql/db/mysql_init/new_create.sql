@@ -1,0 +1,10 @@
+DROP DATABASE IF EXISTS first_db;
+CREATE DATABASE first_db;
+use first_db;
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    id INT(11) AUTO_INCREMENT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    PRIMARY KEY (id));
+);
