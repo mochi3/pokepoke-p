@@ -22,7 +22,6 @@
 </template>
 
 <script>
-import axios from 'axios'
 import app from '@/main.js'
 
 export default {
@@ -35,7 +34,6 @@ export default {
   },
   methods: {
     doLogin() {
-      app.config.globalProperties.$http = axios; //最初の処理内に移動する
       let req = {
         id: 0,
         player_id: this.id,
@@ -45,7 +43,7 @@ export default {
       this.$http.post('/login', req)
         .then(res => {
           console.log(res); //エラー処理、バリデーション、新規作成ログイン、未ログイン時/battleしても接続できないように
-          app.config.globalProperties.$player_id = req.player_id;
+          app.config.globalProperties.$player_id = res.data.id;
           this.$router.push("/select");
         })
     }
@@ -55,9 +53,6 @@ export default {
 
 <style scoped lang="scss">
   .login-page {
-    display: flex;
-    justify-content: center;
-    background-color: green(base);
     padding: 100px;
 
     .login-box {
@@ -69,27 +64,7 @@ export default {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      .input-area {
-        display: flex;
-        flex-direction: column;
-
-        .input-box {
-          display: flex;
-          justify-content: center;
-          width: 100%;     
-          height: 24px;     
-          &:first-child {
-            margin-bottom: 20px;
-          }
-
-          div {
-            display: flex;
-            width: 30%;
-            justify-content: flex-end;
-            padding-right: 5px;
-          }
-        }
-      }
+      
       .login-area {
         display: flex;
         flex-direction: column;

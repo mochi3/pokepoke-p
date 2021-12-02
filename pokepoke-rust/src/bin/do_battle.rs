@@ -52,10 +52,10 @@ fn main() {
     //作ったポケモンを検索
     let search_made_pokemon = |x:i32| p_made_pokemons.filter(pokepoke_rust::schema::p_made_pokemons::id.eq(x))
         .limit(5)
-        .load::<madePokemon>(&connection)
-        .expect("Error loading posts")[0];
-    let made_pokemon_data_1 = search_made_pokemon(pokemon_1);
-    let made_pokemon_data_2 = search_made_pokemon(pokemon_2);
+        .load::<MadePokemon>(&connection)
+        .expect("Error loading posts");
+    let made_pokemon_data_1 = &search_made_pokemon(pokemon_1)[0];
+    let made_pokemon_data_2 = &search_made_pokemon(pokemon_2)[0];
 
     //ポケモンの基礎データ検索
     let search_base_pokemon = |x:i32| p_base_pokemons.filter(pokepoke_rust::schema::p_base_pokemons::id.eq(x))
@@ -75,8 +75,8 @@ fn main() {
     let battle_pokemon_data_2 = search_battle_pokemon(pokemon_2);
 
     //ポケモンの情報まとめる
-    let pokemon1: Pokemon = Pokemon::new(&made_pokemon_data_1, base_pokemon_data_1, &battle_pokemon_data_1);
-    let pokemon2: Pokemon = Pokemon::new(&made_pokemon_data_2, base_pokemon_data_2, &battle_pokemon_data_2);
+    let pokemon1: Pokemon = Pokemon::new(made_pokemon_data_1, base_pokemon_data_1, &battle_pokemon_data_1);
+    let pokemon2: Pokemon = Pokemon::new(made_pokemon_data_2, base_pokemon_data_2, &battle_pokemon_data_2);
     println!("ポケモン1：{:?}\nポケモン2：{:?}",pokemon1,pokemon2);
 
     //技検索
@@ -144,12 +144,12 @@ fn damage_calculate(atk_level: &i32, atk_value: &i32, def_value: &i32, move_powe
 //ポケモンの情報まとめる用
 #[derive(Debug)]
 struct Pokemon<'a> {
-    made_data: &'a madePokemon,
+    made_data: &'a MadePokemon,
     base_data: &'a BasePokemon,
     battle_data: &'a InBattlePokemon,
 }
 impl Pokemon<'_> {
-    fn new<'a>(made_data: &'a madePokemon, base_data: &'a BasePokemon, battle_data: &'a InBattlePokemon) -> Pokemon<'a> {
+    fn new<'a>(made_data: &'a MadePokemon, base_data: &'a BasePokemon, battle_data: &'a InBattlePokemon) -> Pokemon<'a> {
         Pokemon {
             made_data,
             base_data,

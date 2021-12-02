@@ -5,7 +5,7 @@
     <div class="battle-area">
       <div class="field-area">
         <div class="pokemon-area my">
-          <div class="status-box" v-if="show_moves_area">
+          <div class="status-box" v-if="showMovesArea">
             <div class="status-top">
                 <div class="pokemon-name">{{my_field_pokemon.base.name}}</div>
               <div class="status-top-right">
@@ -27,10 +27,10 @@
             </div>
           </div>
           <div class="pokemon-shadow"></div>
-          <img src="@/assets/images/gaburias.png">
+          <img src="@/assets/images/445.png">
         </div>
         <div class="pokemon-area your">
-          <div class="status-box" v-if="show_moves_area">
+          <div class="status-box" v-if="showMovesArea">
             <div class="status-top">
                 <div class="pokemon-name">{{your_field_pokemon.base.name}}</div>
               <div class="status-top-right">
@@ -52,13 +52,13 @@
             </div>
           </div>
           <div class="pokemon-shadow"></div>
-          <img src="@/assets/images/kabarudon.png">          
+          <img src="@/assets/images/450.png">          
         </div>
       </div>
       <!-- メッセージ欄 -->
       <div class="message-area">
         <div class="left-message-box">
-          <div class="moves-area" v-if="show_moves_area">
+          <div class="moves-area" v-if="showMovesArea">
             <button v-for="move in my_field_pokemon.moves" :key="move.id" @click="doMove(move.id)" v-bind:style="{ backgroundColor: move.type_color }">
               <div class="move-name">{{move.name}}</div>
               <div class="move-under">
@@ -92,7 +92,7 @@ export default {
   },
   data() {
     return {
-      show_moves_area: false,
+      showMovesArea: false,
       first_commands: [
         {
           name: "たたかう",
@@ -126,13 +126,13 @@ export default {
               console.log(res);
               this.my_field_pokemon = this.addStatusForDisplay(res);
               this.my_hp_new = this.my_field_pokemon.made.max_hp - this.my_field_pokemon.battle.hp_minus;
-              // this.show_moves_area = true;
+              // this.showMovesArea = true;
               axios.get('/pokemon-and-relative/2')
                 .then(res => {
                   console.log(res);
                   this.your_field_pokemon = this.addStatusForDisplay(res);
                   this.your_hp_new = this.your_field_pokemon.made.max_hp - this.your_field_pokemon.battle.hp_minus;
-                  this.show_moves_area = true;
+                  this.showMovesArea = true;
               console.log(136);
                 });
             });
@@ -162,8 +162,6 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
   .battle-page {
-    background-color: green(base);
-    display: flex;
     padding: 50px;
     font-weight: bold;
 

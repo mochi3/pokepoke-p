@@ -1,6 +1,6 @@
 table! {
     f_player_fields (player_id) {
-        player_id -> Integer,
+        player_id -> Varchar,
         field_pokemon1_id -> Integer,
         field_pokemon2_id -> Integer,
     }
@@ -67,6 +67,7 @@ table! {
         id -> Integer,
         player_id -> Integer,
         base_pokemon_id -> Integer,
+        nickname -> Varchar,
         level -> Integer,
         gender_id -> Integer,
         ability_id -> Integer,
@@ -105,11 +106,13 @@ table! {
 }
 
 table! {
-    s_fields (id) {
-        id -> Unsigned<Integer>,
+    s_rooms (room_id) {
+        id -> Integer,
         player1_id -> Integer,
         player2_id -> Integer,
         is_double_battle -> Integer,
+        room_id -> Text,
+        password -> Text,
     }
 }
 
@@ -118,7 +121,20 @@ table! {
         id -> Integer,
         player_id -> Varchar,
         password -> Varchar,
-        atodekesu -> Integer,
+    }
+}
+
+table! {
+    s_selected_pokemons (id) {
+        id -> Integer,
+        room_id -> Integer,
+        player_id -> Integer,
+        pokemon1_id -> Integer,
+        pokemon2_id -> Integer,
+        pokemon3_id -> Integer,
+        pokemon4_id -> Integer,
+        pokemon5_id -> Integer,
+        pokemon6_id -> Integer,
     }
 }
 
@@ -129,6 +145,6 @@ allow_tables_to_appear_in_same_query!(
     p_in_battle_pokemons,
     p_made_pokemons,
     posts,
-    s_fields,
+    s_rooms,
     s_players,
 );

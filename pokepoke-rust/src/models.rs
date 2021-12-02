@@ -1,4 +1,5 @@
-use super::schema::posts;
+// use super::schema::posts;
+use super::schema::*;
 use serde::{Deserialize, Serialize}; //シリアライズ(get:struct→json)、デシリアライズ(post:json→struct)
 
 #[derive(Serialize, Deserialize, Queryable, Debug)]
@@ -13,18 +14,19 @@ pub struct Post {
 //     pub id: &'a i32,
 //     pub title: &'a str,
 // }
-#[derive(Serialize, Deserialize, Insertable)] //web接続用に書き直し
-#[table_name="posts"]
-pub struct NewPost {
-    pub id: i32,
-    pub title: String,
-}
+// #[derive(Serialize, Deserialize, Insertable)] //web接続用に書き直し
+// #[table_name="posts"]
+// pub struct NewPost {
+//     pub id: i32,
+//     pub title: String,
+// }
 
-#[derive(Queryable, Debug, Copy, Clone, Serialize, Default)]
-pub struct madePokemon {
+#[derive(Queryable, Debug, Serialize, Default)]
+pub struct MadePokemon {
     pub id: i32,
     pub player_id: i32,
     pub base_pokemon_id: i32,
+    pub nickname: String,
     pub level: i32,
     pub gender_id: i32,
     pub ability_id: i32,
@@ -112,5 +114,48 @@ pub struct Player {
     pub id: i32,
     pub player_id: String,
     pub password: String,
-    pub atodekesu: i32,
+}
+
+// #[derive(Deserialize, Insertable, Debug)]
+// // #[derive(Insertable)]
+// #[table_name="s_rooms"]
+// pub struct Room<'a> {
+//     pub id: &'a i32,
+//     pub player1_id: &'a i32,
+//     pub player2_id: &'a i32,
+//     pub is_double_battle: &'a i32,
+//     pub room_id: &'a str,
+//     pub password: &'a str,
+// }
+#[derive(Queryable, Deserialize, Serialize, Insertable, Debug, Eq, PartialEq)]
+#[table_name="s_rooms"]
+pub struct Room {
+    pub id: i32,
+    pub player1_id: i32,
+    pub player2_id: i32,
+    pub is_double_battle: i32,
+    pub room_id: String,
+    pub password: String,
+}
+
+#[derive(Queryable, Deserialize, Serialize, Insertable, Debug)]
+#[table_name="s_selected_pokemons"]
+pub struct SelectedPokemon {
+    pub id: i32,
+    pub room_id: i32,
+    pub player_id: i32,
+    pub pokemon1_id: i32,
+    pub pokemon2_id: i32,
+    pub pokemon3_id: i32,
+    pub pokemon4_id: i32,
+    pub pokemon5_id: i32,
+    pub pokemon6_id: i32,
+}
+
+#[derive(Insertable)]
+#[table_name="posts"]
+pub struct NewPost<'a> {
+    pub id: &'a i32,
+    pub title: &'a str,
+    // pub body: &'a str,
 }
