@@ -21,6 +21,15 @@ pub struct Post {
 //     pub title: String,
 // }
 
+#[derive(Queryable, Debug, Serialize, Deserialize, Insertable)]
+#[table_name="f_player_fields"]
+pub struct PlayerField {
+    pub room_id: i32,
+    pub player_id: i32,
+    pub field_pokemon1_id: i32,
+    pub field_pokemon2_id: i32,
+}
+
 #[derive(Queryable, Debug, Serialize, Default)]
 pub struct MadePokemon {
     pub id: i32,
@@ -75,9 +84,13 @@ pub struct BasePokemon {
     pub s_base: i32,
 }
 
-#[derive(Queryable, Debug, Copy, Clone, Serialize)]
-pub struct InBattlePokemon {
+#[derive(Queryable, Debug, Copy, Clone, Serialize, Deserialize, Default, Insertable)]
+#[table_name="p_in_battle_pokemons"]
+pub struct BattlePokemon {
+    pub id: i32,
+    pub player_id: i32,
     pub made_pokemon_id: i32,
+    pub number: i32,
     pub hp_minus: i32,
     pub ailment: i32,
     pub a_updown: i32,
@@ -152,10 +165,90 @@ pub struct SelectedPokemon {
     pub pokemon6_id: i32,
 }
 
+#[derive(Queryable, Deserialize, Serialize, Insertable, Debug, Default)]
+#[table_name="f_commands"]
+pub struct Command {
+    pub id: i32,
+    pub room_id: i32,
+    pub player_id: i32,
+    pub turn: i32,
+    pub command_type: i32,
+    pub command_id: i32,
+}
+// impl Command {
+//     pub fn set_turn(&self, turn: i32) -> Command {
+//         println!("{:?}", turn);
+//         Command {
+//             id: self.id,
+//             room_id: self.room_id,
+//             player_id: self.player_id,
+//             turn: turn,
+//             command_type: self.command_type,
+//             command_id: self.command_id,
+//         }
+//     }
+// }
+
+
 #[derive(Insertable)]
 #[table_name="posts"]
 pub struct NewPost<'a> {
     pub id: &'a i32,
     pub title: &'a str,
     // pub body: &'a str,
+}
+
+
+
+//ポケモンの情報まとめる用
+#[derive(Debug, Serialize, Default)]
+pub struct ReturnPokemon {
+    pub made_pokemon: Vec<MadePokemon>,
+    pub base_pokemon: Vec<BasePokemon>,
+    pub battle_pokemon: Vec<BattlePokemon>,
+    pub moves: Vec<Vec<MoveBase>>,
+}
+
+#[derive(Debug, Default)]
+pub struct BattleInfo {
+    pub player_id: i32,
+    pub pokemon: ReturnPokemon,
+    pub moving: Vec<MoveBase>,
+}
+impl BattleInfo {
+    pub fn new(player_id: i32, pokemon: ReturnPokemon, moving: Vec<MoveBase>) -> BattleInfo {
+        BattleInfo { player_id, pokemon, moving }
+    }
+}
+
+
+//ポケモンの情報まとめる用
+#[derive(Debug)]
+pub struct Pokemon<'a> {
+    made_data: &'a MadePokemon,
+    base_data: &'a BasePokemon,
+    battle_data: &'a BattlePokemon,
+}
+// impl Pokemon<'_> {
+//     fn new<'a>(made_data: &'a MadePokemon, base_data: &'a BasePokemon, battle_data: &'a BattlePokemon) -> Pokemon<'a> {
+//         Pokemon {
+//             made_data,
+//             base_data,
+//             battle_data,
+//         }
+//     }
+// }
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct ShowBattle {
+    pub player_id: i32,
+    pub kind: i32,
+    pub pokemon_id: i32, //いらんかも
+    pub value: i32,
+    pub name_string: String,
+}
+impl ShowBattle {
+    pub fn new(name_string: impl Into<String>) -> ShowBattle {
+        ShowBattle { name_string: name_string.into(), ..Default::default() }
+    }
 }

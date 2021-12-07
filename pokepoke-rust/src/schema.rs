@@ -1,6 +1,7 @@
 table! {
     f_player_fields (player_id) {
-        player_id -> Varchar,
+        room_id -> Integer,
+        player_id -> Integer,
         field_pokemon1_id -> Integer,
         field_pokemon2_id -> Integer,
     }
@@ -44,7 +45,10 @@ table! {
 
 table! {
     p_in_battle_pokemons (made_pokemon_id) {
+        id -> Integer,
+        player_id -> Integer,
         made_pokemon_id -> Integer,
+        number -> Integer,
         hp_minus -> Integer,
         ailment -> Integer,
         a_updown -> Integer,
@@ -135,6 +139,17 @@ table! {
         pokemon4_id -> Integer,
         pokemon5_id -> Integer,
         pokemon6_id -> Integer,
+    }
+}
+
+table! {
+    f_commands (id) {
+        id -> Integer,
+        room_id -> Integer,
+        player_id -> Integer,
+        turn -> Integer,
+        command_type -> Integer,
+        command_id -> Integer,
     }
 }
 

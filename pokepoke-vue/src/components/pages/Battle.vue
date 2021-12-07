@@ -4,10 +4,10 @@
 
     <div class="battle-area">
       <div class="field-area">
-        <div class="pokemon-area my">
-          <div class="status-box" v-if="showMovesArea">
+        <div class="pokemon-area my" v-if="showMyPokemonArea">
+          <div class="status-box">
             <div class="status-top">
-                <div class="pokemon-name">{{my_field_pokemon.base.name}}</div>
+                <div class="pokemon-name">{{my_field_pokemon.made.nickname}}</div>
               <div class="status-top-right">
                 <div class="pokemon-gender">{{my_field_pokemon.made.gender_name}}</div>
                 <div class="pokemon-level">Lv. {{my_field_pokemon.made.level}}</div>
@@ -23,16 +23,18 @@
             </div>
             <div class="status-under">
               <div class="hp-number">{{my_hp_new}} / {{my_field_pokemon.made.max_hp}}</div>
-              <div class="ailment">やけど</div>
+              <div class="ailment"></div>
             </div>
           </div>
           <div class="pokemon-shadow"></div>
-          <img src="@/assets/images/445.png">
+          <img :src="require('@/assets/images/' + my_field_pokemon.base.id + '.png')">
         </div>
-        <div class="pokemon-area your">
-          <div class="status-box" v-if="showMovesArea">
+        <div class="pokemon-area my" v-if="!showMyPokemonArea">
+        </div>
+        <div class="pokemon-area your" v-if="showYourPokemonArea">
+          <div class="status-box">
             <div class="status-top">
-                <div class="pokemon-name">{{your_field_pokemon.base.name}}</div>
+                <div class="pokemon-name">{{your_field_pokemon.made.nickname}}</div>
               <div class="status-top-right">
                 <div class="pokemon-gender">{{your_field_pokemon.made.gender_name}}</div>
                 <div class="pokemon-level">Lv. {{your_field_pokemon.made.level}}</div>
@@ -52,7 +54,7 @@
             </div>
           </div>
           <div class="pokemon-shadow"></div>
-          <img src="@/assets/images/450.png">          
+          <img :src="require('@/assets/images/' + your_field_pokemon.base.id + '.png')">          
         </div>
       </div>
       <!-- メッセージ欄 -->
@@ -67,12 +69,16 @@
               </div>
             </button>
           </div>
+          <div class="narration-area" v-if="narration != ''">
+            {{narration}}
+          </div>
         </div>
-        <div class="right-message-box">
-          <button v-for="item in first_commands" :key="item.id" @click="getMadePokemons(item.id)">
+        <div class="right-message-box" v-if="showButtonArea">
+          <button v-for="item in first_commands" :key="item.id" @click="onClickCommand(item.id)">
             {{item.name}}
           </button>
         </div>
+        <div class="right-message-box" v-else></div>
       </div>
     </div>
 
@@ -83,7 +89,6 @@
 <script>
 
 import const_modules from "@/const-data.js";
-import axios from 'axios'
 
 export default {
   name: 'Battle',
@@ -92,69 +97,149 @@ export default {
   },
   data() {
     return {
+      showButtonArea: false,
+      showNarrationArea: false,
       showMovesArea: false,
-      first_commands: [
-        {
-          name: "たたかう",
-          id: 1
-        },
-        {
-          name: "どうぐ",
-          id: 2
-        },
-        {
-          name: "ポケモン",
-          id: 3
-        },
-        {
-          name: "にげる",
-          id: 4
-        },
-      ],
+      showMyPokemonArea: false,
+      showYourPokemonArea: false,
+      first_commands: const_modules.COMMANDS,
       // moves: [],
       my_field_pokemon: {},
       my_hp_new: 0,
       your_field_pokemon: {},
       your_hp_new: 0,
+      narration: "",
+      non: function() {},
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     }
   },
   methods: {
-    getMadePokemons(id) {
-        if (id == 1) {
-          axios.get('/pokemon-and-relative/1')
-            .then(res => {
-              console.log(res);
-              this.my_field_pokemon = this.addStatusForDisplay(res);
-              this.my_hp_new = this.my_field_pokemon.made.max_hp - this.my_field_pokemon.battle.hp_minus;
-              // this.showMovesArea = true;
-              axios.get('/pokemon-and-relative/2')
-                .then(res => {
-                  console.log(res);
-                  this.your_field_pokemon = this.addStatusForDisplay(res);
-                  this.your_hp_new = this.your_field_pokemon.made.max_hp - this.your_field_pokemon.battle.hp_minus;
-                  this.showMovesArea = true;
-              console.log(136);
-                });
-            });
-        }
-    },
-    addStatusForDisplay(res) {
+    // getMadePokemons(id) {
+    //     if (id == 1) {
+    //       axios.get('/pokemon-and-relative/1')
+    //         .then(res => {
+    //           console.log(res);
+    //           this.my_field_pokemon = this.formatPokemonForDisplay(res);
+    //           this.my_hp_new = this.my_field_pokemon.made.max_hp - this.my_field_pokemon.battle.hp_minus;
+    //           // this.showMovesArea = true;
+    //           axios.get('/pokemon-and-relative/3')
+    //             .then(res => {
+    //               console.log(res);
+    //               this.your_field_pokemon = this.formatPokemonForDisplay(res);
+    //               this.your_hp_new = this.your_field_pokemon.made.max_hp - this.your_field_pokemon.battle.hp_minus;
+    //               this.showMovesArea = true;
+    //           console.log(136);
+    //             });
+    //         });
+    //     }
+    // },
+    formatPokemonForDisplay(pokemon) {
       //技名、タイプ名、色いれる
-      res.data.moves[1].map((v,i) => {
-        v.remain_pp = v.max_pp - eval("res.data.battle_pokemon[0].move" + (i+1) + "_pp_minus");
+      pokemon.moves[1].map((v,i) => {
+        v.remain_pp = v.max_pp - eval("pokemon.battle_pokemon[0].move" + (i+1) + "_pp_minus");
         v.type_name = const_modules.TYPES.filter(t => t.id == v.type_id)[0].name;
         v.type_color = const_modules.TYPES.filter(t => t.id == v.type_id)[0].color;
       });
       //性別名いれる
-      res.data.made_pokemon[0].gender_name = const_modules.GENDER.filter(t => t.id == res.data.made_pokemon[0].gender_id)[0].name;
+      pokemon.made_pokemon[0].gender_name = const_modules.GENDERS.filter(t => t.id == pokemon.made_pokemon[0].gender_id)[0].name;
       let field_pokemon = {
-        base: res.data.base_pokemon[0],
-        made: res.data.made_pokemon[0],
-        battle: res.data.battle_pokemon[0],
-        moves: res.data.moves[1],
+        base: pokemon.base_pokemon[0],
+        made: pokemon.made_pokemon[0],
+        battle: pokemon.battle_pokemon[0],
+        moves: pokemon.moves[1],
       };
       return field_pokemon;
+    },
+    onClickCommand(id) {
+      this.narration = '';
+      this.showMovesArea = false;
+      switch (id) {
+        case 1: //たたかう
+          this.showMovesArea = true;
+          break;
+        case 2:
+        case 4:
+          this.onClickNgButton(id)
+          break;
+      }
+    },
+    doMove(id) {
+      let req = {
+        id: 0,
+        room_id: 14,
+        player_id: 1,
+        turn: 0,
+        command_type: 1,
+        command_id: id,
+      }
+      this.$http.post(`/do-command/14/1`, req) //ルームID,プレーヤーID,コマンドID,技ID
+        .then(res => {
+          console.log(res);
+          this.showButtonArea = false;
+          this.showMovesArea = false;
+          this.doShowBattle(res.data);
+        })
+    },
+    async firstTurn() {
+      this.narration = `相手は ${this.your_field_pokemon.made.nickname} をくり出してきた！`;
+      await this.sleep(1000);
+      this.showYourPokemonArea = true;
+      await this.sleep(1000);
+      this.narration = `いけ！ ${this.my_field_pokemon.made.nickname} ！`;
+      await this.sleep(1000);
+      this.showMyPokemonArea = true;
+      await this.sleep(1000);
+      this.narration = `${this.my_field_pokemon.made.nickname} はどうする？`;
+      this.showButtonArea = true;
+    },
+    async onClickNgButton(id) {
+      this.showButtonArea = false;
+      this.narration = '';
+      await this.sleep(500);
+      this.narration = id == 4? `逃げられない！`: `どうぐは使えない！`;
+      await this.sleep(1000);
+      this.showButtonArea = true;
+      this.narration = `${this.my_field_pokemon.made.nickname} はどうする？`;
+    },
+    async doShowBattle(showBattles) {
+      await this.sleep(1000);
+      for (let showBattle of showBattles) {
+        let pokemon = showBattle.player_id == this.$player_id? this.my_field_pokemon: this.your_field_pokemon;
+        switch (showBattle.kind) {
+          case 100: //技使うメッセージ
+            await this.sleep(1000);
+            this.narration = `${pokemon.made.nickname} の ${showBattle.name_string} ！`;
+            break;
+          case 101: { //HP減らす処理
+            await this.sleep(1000);
+            if (showBattle.player_id == this.$player_id) {
+              this.my_hp_new = (this.my_hp_new - showBattle.value > 0)? this.my_hp_new - showBattle.value: 0;
+            } else {
+              this.your_hp_new = (this.your_hp_new - showBattle.value > 0)? this.your_hp_new - showBattle.value: 0;
+            }
+            break;
+          }
+          case 102: //急所メッセージ
+            await this.sleep(1000);
+            this.narration = `急所に当たった！`;
+            break;
+        }
+      }
+      await this.sleep(1000);
+      this.narration = `${this.my_field_pokemon.made.nickname} はどうする？`;
+      this.showButtonArea = true;
     }
+  },
+  created: function () {
+    this.$http.get(`/battle-pokemon/14/1`)
+      .then(res => {
+        console.log(res);
+        this.my_field_pokemon = this.formatPokemonForDisplay(res.data[0]);
+        this.your_field_pokemon = this.formatPokemonForDisplay(res.data[1]);
+        this.my_hp_new = this.my_field_pokemon.made.max_hp - this.my_field_pokemon.battle.hp_minus;
+        this.your_hp_new = this.your_field_pokemon.made.max_hp - this.your_field_pokemon.battle.hp_minus;
+        this.firstTurn();
+      })
   }
 }
 </script>
@@ -192,6 +277,15 @@ export default {
           flex-wrap: wrap;
           flex-direction: column;
           position: relative;
+          // animation: move 1s infinite;
+        }
+        @keyframes move{
+          0% {
+            padding: 0 0;
+          }
+          50% {
+            padding: 4px 0;
+          }
         }
         .pokemon-shadow {
             background-color: #a9a9a9;
@@ -289,11 +383,11 @@ export default {
               border-radius: 1rem;
               padding: 0 0.5rem;
               margin: 0.1rem 0;
-              background-color: #af4c13;
+              // background-color: #af4c13;
               color: white;
               display: flex;
               align-items: center;
-              box-shadow: 3px 4px 3px -2px #686868;
+              // box-shadow: 3px 4px 3px -2px #686868;
             }
           }
         }

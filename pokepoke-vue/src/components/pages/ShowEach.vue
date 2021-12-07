@@ -22,7 +22,7 @@
         </div>
       </div>
     </div>
-    <button :disabled="selectedBattlePokemons.length < 3">START</button>
+    <button :disabled="selectedBattlePokemons.length < 3" @click="onClickStart()">START</button>
   </div>
 </template>
 
@@ -40,12 +40,19 @@ export default {
     }
   },
   methods: {
-    selectBattlePokemon (id) {
+    selectBattlePokemon(id) {
       if (this.selectedBattlePokemons.some(v => v == id)) {
         this.selectedBattlePokemons = this.selectedBattlePokemons.filter(v => v != id);
       } else if (this.selectedBattlePokemons.length < 3) {
         this.selectedBattlePokemons.push(id);
       }
+    },
+    onClickStart() {
+    this.$http.post("/battle-pokemon", this.selectedBattlePokemons)
+      .then(res => {
+        console.log(res);
+        this.$router.push("/battle");
+      })
     }
   },
   created: function() {

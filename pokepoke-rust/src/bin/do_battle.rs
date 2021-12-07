@@ -69,7 +69,7 @@ fn main() {
     // バトル中のポケモンを検索
     let search_battle_pokemon = |x:i32| p_in_battle_pokemons.filter(made_pokemon_id.eq(x))
         .limit(5)
-        .load::<InBattlePokemon>(&connection)
+        .load::<BattlePokemon>(&connection)
         .expect("Error loading posts")[0];
     let battle_pokemon_data_1 = search_battle_pokemon(pokemon_1);
     let battle_pokemon_data_2 = search_battle_pokemon(pokemon_2);
@@ -141,22 +141,22 @@ fn damage_calculate(atk_level: &i32, atk_value: &i32, def_value: &i32, move_powe
 
 
 
-//ポケモンの情報まとめる用
-#[derive(Debug)]
-struct Pokemon<'a> {
-    made_data: &'a MadePokemon,
-    base_data: &'a BasePokemon,
-    battle_data: &'a InBattlePokemon,
-}
-impl Pokemon<'_> {
-    fn new<'a>(made_data: &'a MadePokemon, base_data: &'a BasePokemon, battle_data: &'a InBattlePokemon) -> Pokemon<'a> {
-        Pokemon {
-            made_data,
-            base_data,
-            battle_data,
-        }
-    }
-}
+// //ポケモンの情報まとめる用
+// #[derive(Debug)]
+// struct Pokemon<'a> {
+//     made_data: &'a MadePokemon,
+//     base_data: &'a BasePokemon,
+//     battle_data: &'a BattlePokemon,
+// }
+// impl Pokemon<'_> {
+//     fn new<'a>(made_data: &'a MadePokemon, base_data: &'a BasePokemon, battle_data: &'a BattlePokemon) -> Pokemon<'a> {
+//         Pokemon {
+//             made_data,
+//             base_data,
+//             battle_data,
+//         }
+//     }
+// }
 
 //急所
 fn check_critical_hit(rank: &i32) -> bool {
