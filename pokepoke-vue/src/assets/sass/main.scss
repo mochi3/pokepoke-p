@@ -47,3 +47,15 @@ button {
         }
     }
 }
+
+// ポップアップ外側
+.pop-overwrap {
+    position: absolute;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    background-color: #6e6e6ea6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

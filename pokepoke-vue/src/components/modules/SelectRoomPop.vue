@@ -1,7 +1,7 @@
 @import "@/assets/sass/main.scss";
 
 <template>
-  <div class="select-room-pop" @click.self="close()">
+  <div class="pop-overwrap" @click.self="close()">
     <div class="select-room-box">
       <div class="tab-area" @click="toggle()">
         <div :class="{active: toggleMakeIn}">作成</div>
@@ -65,15 +65,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-  .select-room-pop {
-    position: absolute;
-    z-index: 100;
-    width: 100%;
-    height: 100%;
-    background-color: #6e6e6ea6;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .pop-overwrap {
 
     .select-room-box {
       width: 300px;

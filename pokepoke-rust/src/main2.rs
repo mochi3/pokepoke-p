@@ -31,11 +31,55 @@ async fn main() -> std::io::Result<()> {
         .service(get_selected_pokemon)
         .service(post_battle_pokemon)
         .service(get_battle_pokemon)
+        .service(get_change_pokemons)
         .service(do_command)
+        .service(print)
         )
         .bind("127.0.0.1:8081")?
         .run()
-        .await
+        .await //Future に対して .await を作用させると、Future の完了を待って、その結果を取得することができます
+}
+
+use std::time::Duration;
+
+async fn re(i: i32) -> String {
+    // for i in 0..10 {
+        println!("{}", 1);
+        tokio::time::delay_for(Duration::from_millis(1000)).await; //n秒待つ
+        if i > 5 {
+            println!("{}", "こえた");
+            "ok".to_string()
+        } else {
+            "no".to_string()
+        }
+    // }
+    // "ok".to_string()
+}
+
+#[get("/print/{_player_id}")]
+async fn print(web::Path(_player_id): web::Path<u32>) -> impl Responder { //asyncがついてるので非同期関数（futureを返す関数）
+    for i in 0..10 {
+        // re(i).await;
+        println!("{}", 1);
+        tokio::time::delay_for(Duration::from_millis(1000)).await; //n秒待つ
+        if i > 5 {
+            println!("{}", "こえた");
+            break;
+        }
+    }
+    // let mut rt = tokio::runtime::Runtime::new().unwrap();
+    // let task = async {
+    //     for i in 0..10 {
+    //         println!("{}", _player_id);
+    //         tokio::time::delay_for(Duration::from_millis(1000)).await; //n秒待つ
+    //         if i > 5 {
+    //             println!("{}", "こえた");
+    //         };
+    //     };
+    // };
+    // rt.block_on(task);
+    println!("{}", "done");
+    HttpResponse::Ok()
 }
 
 
@@ -157,47 +201,88 @@ async fn get_battle_pokemon(web::Path((req_room_id, req_player_id)): web::Path<(
     HttpResponse::Ok().json((my_first_pokemon, your_first_pokemon))
 }
 
+//バトル時ポケモン交換用ポケモン一覧取得
+#[get("/battle-change-pokemons/{req_player_id}")] //room_idもつけた方がいい？
+async fn get_change_pokemons(web::Path(req_player_id): web::Path<i32>) -> impl Responder {
+    let connection = establish_connection();
+    let mut battle_made_pokemons: Vec<_> = Vec::new();
+    let my_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, req_player_id, "player_id");
+    for battle_pokemon in my_battle_pokemons.into_iter() {
+        battle_made_pokemons.push((battle_pokemon, search_made_pokemon(&connection, battle_pokemon.made_pokemon_id).pop()));
+    }
+    HttpResponse::Ok().json(battle_made_pokemons)
+}
 
 //バトルコマンド
 #[post("/do-command/{req_room_id}/{req_player_id}")]
 async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32)>, data: String) -> impl Responder {
     let connection = establish_connection();
+    //現在ターン取得
+    let turn = search_field(&connection, req_room_id)[0].turn;
+    
     //コマンドをDBに登録
-    let turn = 1;
     let mut my_command: Command = serde_json::from_str(&data).unwrap();
     my_command.turn = turn;
-    println!("{:?}", my_command);
     insert_command(&connection, &my_command);
 
     //相手の情報取得
     let your_player_id = search_another_player(&connection, &req_room_id, &req_player_id);
+
+    for i in 0..900 { //最大3分
+        println!("{}", req_player_id);
+        tokio::time::delay_for(Duration::from_millis(200)).await; //nミリ秒待つ
+        if search_command(&connection, req_room_id, your_player_id, turn).len() > 0 {
+            break;
+        }
+    }
+
+    //この後の処理一連をするフラグ取得
+    let do_check_flg = check_done_turn(&connection, req_room_id);
+    println!("{:?}がbreakしてフラグ{:?}", req_player_id, do_check_flg);
+    if do_check_flg {
+        println!("{:?}", "checkしない");
+        for i in 0..300 { //最大1分
+            tokio::time::delay_for(Duration::from_millis(200)).await; //nミリ秒待つ
+            if search_show_battles(&connection, req_room_id).len() > 0 { //処理が終わってたら
+                break;
+            }
+        }
+        println!("{:?}", "かえす");
+        return HttpResponse::Ok().json(search_show_battles(&connection, req_room_id))
+    }
+
     let your_command = &search_command(&connection, req_room_id, your_player_id, turn)[0];
-    println!("{:?}", your_command);
 
     //それぞれのポケモン、技
     let my_pokemon_id = search_field_pokemon(&connection, req_room_id, req_player_id);
     let your_pokemon_id = search_field_pokemon(&connection, req_room_id, your_player_id);
     let my_pokemon = return_pokemon(&connection, my_pokemon_id);
     let your_pokemon = return_pokemon(&connection, your_pokemon_id);
-    println!("{:?},{:?}", my_pokemon, your_pokemon);
 
     //両方がバトル選択
 
     //技検索
-    let my_move = search_move_base(&connection, my_command.command_id);
-    let your_move = search_move_base(&connection, your_command.command_id);
+    let my_move = search_move_base(&connection, my_command.command_id).pop().unwrap();
+    let your_move = search_move_base(&connection, your_command.command_id).pop().unwrap();
     let my_battle_info = BattleInfo::new(req_player_id, my_pokemon, my_move);
     let your_battle_info = BattleInfo::new(your_player_id, your_pokemon, your_move);
 
     //素早さ比較
     let (first, second) = if check_faster(&my_battle_info.pokemon, &your_battle_info.pokemon) {(my_battle_info, your_battle_info)} else {(your_battle_info, my_battle_info)};
-    println!("{:?}", first);
 
     //フロントに返すやつ
     let mut show_battles: Vec<ShowBattle> = vec![Default::default()];
+    // let show_battle_base = ShowBattle {room_id: req_room_id, turn: turn, ..Default::default()}
     show_battles = doBattle(&first, &second, show_battles);
     show_battles = doBattle(&second, &first, show_battles);
-    println!("{:?}", show_battles);
+    show_battles.iter_mut().map(|x| x.room_id = req_room_id).collect::<Vec<_>>();
+    insert_show_battle(&connection, &show_battles);
+
+    // if should_change_db_flg {
+    //     insert_show_battle(show_battles);
+    // } else {
+    //     show_battles 
+    // }
 
     HttpResponse::Ok().json(show_battles)
 }

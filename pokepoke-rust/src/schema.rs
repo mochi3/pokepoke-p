@@ -153,6 +153,29 @@ table! {
     }
 }
 
+table! {
+    f_fields (id) {
+        id -> Integer,
+        room_id -> Integer,
+        turn -> Integer,
+        done_turn -> Integer,
+        weather_id -> Integer,
+    }
+}
+
+table! {
+    f_show_battles (id) {
+        id -> Integer,
+        room_id -> Integer,
+        player_id -> Integer,
+        kind -> Integer,
+        pokemon_id -> Integer,
+        value -> Integer,
+        name_string -> Varchar,
+    }
+}
+
+
 allow_tables_to_appear_in_same_query!(
     f_player_fields,
     m_move_bases,

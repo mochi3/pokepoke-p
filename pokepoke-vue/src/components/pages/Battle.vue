@@ -17,7 +17,8 @@
               <div class="hp-base">
                 <div class="hp-hp">HP</div>
                 <div class="hp-bar-outer">
-                  <div class="hp-bar-inner" v-bind:style="{ width: (my_hp_new / my_field_pokemon.made.max_hp)*100 + '%' }"></div>
+                  <div class="hp-bar-inner" :class="{red: (my_hp_new / my_field_pokemon.made.max_hp)<0.1, yellow: (my_hp_new / my_field_pokemon.made.max_hp)<0.3}" 
+                  v-bind:style="{ width: (my_hp_new / my_field_pokemon.made.max_hp)*100 + '%' }"></div>
                 </div>
               </div>
             </div>
@@ -44,7 +45,8 @@
               <div class="hp-base">
                 <div class="hp-hp">HP</div>
                 <div class="hp-bar-outer">
-                  <div class="hp-bar-inner" v-bind:style="{ width: (your_hp_new / your_field_pokemon.made.max_hp)*100 + '%' }"></div>
+                  <div class="hp-bar-inner" :class="{red: (your_hp_new / your_field_pokemon.made.max_hp)<0.1, yellow: (your_hp_new / your_field_pokemon.made.max_hp)<0.3}" 
+                  v-bind:style="{ width: (your_hp_new / your_field_pokemon.made.max_hp)*100 + '%' }"></div>
                 </div>
               </div>
             </div>
@@ -135,18 +137,18 @@ export default {
     // },
     formatPokemonForDisplay(pokemon) {
       //技名、タイプ名、色いれる
-      pokemon.moves[1].map((v,i) => {
-        v.remain_pp = v.max_pp - eval("pokemon.battle_pokemon[0].move" + (i+1) + "_pp_minus");
+      pokemon.moves.map((v,i) => {
+        v.remain_pp = v.max_pp - eval("pokemon.battle_pokemon.move" + (i+1) + "_pp_minus");
         v.type_name = const_modules.TYPES.filter(t => t.id == v.type_id)[0].name;
         v.type_color = const_modules.TYPES.filter(t => t.id == v.type_id)[0].color;
       });
       //性別名いれる
-      pokemon.made_pokemon[0].gender_name = const_modules.GENDERS.filter(t => t.id == pokemon.made_pokemon[0].gender_id)[0].name;
+      pokemon.made_pokemon.gender_name = const_modules.GENDERS.filter(t => t.id == pokemon.made_pokemon.gender_id)[0].name;
       let field_pokemon = {
-        base: pokemon.base_pokemon[0],
-        made: pokemon.made_pokemon[0],
-        battle: pokemon.battle_pokemon[0],
-        moves: pokemon.moves[1],
+        base: pokemon.base_pokemon,
+        made: pokemon.made_pokemon,
+        battle: pokemon.battle_pokemon,
+        moves: pokemon.moves,
       };
       return field_pokemon;
     },
@@ -157,26 +159,36 @@ export default {
         case 1: //たたかう
           this.showMovesArea = true;
           break;
+        case 3: //ポケモン交換
+          this.openPokemonChangePop();
+          break;
         case 2:
         case 4:
           this.onClickNgButton(id)
           break;
       }
     },
-    doMove(id) {
+    openPokemonChangePop() { //ポケモン交換
+      this.$http.get(`/battle-change-pokemons/${this.$player_id}`) //ルームID,プレーヤーID,コマンドID,技ID
+        .then(res => {
+          console.log(res);
+        })
+    },
+    doMove(id) { //技選択
+      this.showButtonArea = false;
+      this.showMovesArea = false;
+      this.narration = '通信待機中...';
       let req = {
         id: 0,
         room_id: 14,
-        player_id: 1,
+        player_id: this.$player_id,
         turn: 0,
         command_type: 1,
         command_id: id,
       }
-      this.$http.post(`/do-command/14/1`, req) //ルームID,プレーヤーID,コマンドID,技ID
+      this.$http.post(`/do-command/14/${this.$player_id}`, req) //ルームID,プレーヤーID,コマンドID,技ID
         .then(res => {
           console.log(res);
-          this.showButtonArea = false;
-          this.showMovesArea = false;
           this.doShowBattle(res.data);
         })
     },
@@ -193,7 +205,6 @@ export default {
       this.showButtonArea = true;
     },
     async onClickNgButton(id) {
-      this.showButtonArea = false;
       this.narration = '';
       await this.sleep(500);
       this.narration = id == 4? `逃げられない！`: `どうぐは使えない！`;
@@ -231,7 +242,7 @@ export default {
     }
   },
   created: function () {
-    this.$http.get(`/battle-pokemon/14/1`)
+    this.$http.get(`/battle-pokemon/14/${this.$player_id}`)
       .then(res => {
         console.log(res);
         this.my_field_pokemon = this.formatPokemonForDisplay(res.data[0]);
@@ -367,6 +378,13 @@ export default {
                   height: 100%;
                   background-color: #7ac175;
                   border-radius: 0.3rem;
+                  transition: width 1s ease, background-color 1s ease;
+                  &.red {
+                    background-color: #e53a3a;
+                  }
+                  &.yellow {
+                    background-color: #f1cf27;
+                  }
                 }
               }
             }

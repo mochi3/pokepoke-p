@@ -56,7 +56,6 @@ use schema::posts;
 const BASE_STR: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 pub fn gen_random_str() -> String {
-    use rand::prelude::SliceRandom;
     let mut rng = &mut rand::thread_rng();
     String::from_utf8(
         BASE_STR.as_bytes()
@@ -78,32 +77,34 @@ use schema::s_rooms::dsl::*;
 use schema::s_selected_pokemons::dsl::*;
 use schema::f_commands::dsl::*;
 use schema::f_player_fields::dsl::*;
+use schema::f_fields::dsl::*;
+use schema::f_show_battles::dsl::*;
 
 //-----------select---------------------------------
 
-pub fn search_made_pokemon (connection: &MysqlConnection, value: i32)  -> Vec<MadePokemon> {
-    p_made_pokemons.filter(schema::p_made_pokemons::id.eq(value))
+pub fn search_made_pokemon (connection: &MysqlConnection, _value: i32)  -> Vec<MadePokemon> {
+    p_made_pokemons.filter(schema::p_made_pokemons::id.eq(_value))
         .load::<MadePokemon>(connection)
         .expect("Error loading posts")
 }
 
-pub fn search_base_pokemon (connection: &MysqlConnection, value: i32)  -> Vec<BasePokemon> {
-    p_base_pokemons.filter(schema::p_base_pokemons::id.eq(value))
+pub fn search_base_pokemon (connection: &MysqlConnection, _value: i32)  -> Vec<BasePokemon> {
+    p_base_pokemons.filter(schema::p_base_pokemons::id.eq(_value))
         .load::<BasePokemon>(connection)
         .expect("Error loading posts")
 }
 
-pub fn search_battle_pokemons (connection: &MysqlConnection, value: i32, column: &str)  -> Vec<BattlePokemon> {
+pub fn search_battle_pokemons (connection: &MysqlConnection, _value: i32, column: &str)  -> Vec<BattlePokemon> {
     if column == "made_pokemon_id" {
-        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::made_pokemon_id.eq(value))
+        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::made_pokemon_id.eq(_value))
             .load::<BattlePokemon>(connection)
             .expect("Error loading posts")
     } else if column == "player_id" {
-        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(value))
+        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(_value))
             .load::<BattlePokemon>(connection)
             .expect("Error loading posts")
     } else {
-        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(value))
+        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(_value))
             .load::<BattlePokemon>(connection)
             .expect("Error loading posts")
     }
@@ -116,14 +117,14 @@ pub fn search_battle_pokemons_first (connection: &MysqlConnection, _player_id: i
         .expect("Error loading posts")
 }
 
-pub fn search_room (connection: &MysqlConnection, value: i32) -> Vec<Room> {
-    s_rooms.filter(schema::s_rooms::id.eq(value))
+pub fn search_room (connection: &MysqlConnection, _value: i32) -> Vec<Room> {
+    s_rooms.filter(schema::s_rooms::id.eq(_value))
         .load::<Room>(connection)
         .expect("Error loading posts")
 }
 
-pub fn search_select_pokemon (connection: &MysqlConnection, value: i32) -> Vec<SelectedPokemon> {
-    s_selected_pokemons.filter(schema::s_selected_pokemons::id.eq(value))
+pub fn search_select_pokemon (connection: &MysqlConnection, _value: i32) -> Vec<SelectedPokemon> {
+    s_selected_pokemons.filter(schema::s_selected_pokemons::id.eq(_value))
         .load::<SelectedPokemon>(connection)
         .expect("Error loading posts")
 }
@@ -140,8 +141,8 @@ pub fn search_made_pokemons_by_selected_pokemons (connection: &MysqlConnection, 
         .expect("Error loading p_made_pokemons")
 }
 
-pub fn search_move_base (connection: &MysqlConnection, value: i32) -> Vec<MoveBase> {
-    m_move_bases.filter(schema::m_move_bases::id.eq(value))
+pub fn search_move_base (connection: &MysqlConnection, _value: i32) -> Vec<MoveBase> {
+    m_move_bases.filter(schema::m_move_bases::id.eq(_value))
         .load::<MoveBase>(connection)
         .expect("Error loading posts")
 }
@@ -163,32 +164,62 @@ pub fn search_field_pokemon (connection: &MysqlConnection, _room_id: i32, _playe
         .expect("Error loading posts")[0].field_pokemon1_id
 }
 
+pub fn search_field (connection: &MysqlConnection, _room_id: i32) -> Vec<Field> {
+    f_fields
+        .filter(schema::f_fields::room_id.eq(_room_id))
+        .load::<Field>(connection)
+        .expect("Error loading posts")
+}
+
+pub fn search_show_battles (connection: &MysqlConnection, _room_id: i32) -> Vec<ShowBattle> {
+    f_show_battles
+        .filter(schema::f_show_battles::room_id.eq(_room_id))
+        .load::<ShowBattle>(connection)
+        .expect("Error loading posts")
+}
+
 //-----------------insert-------------------------------------
 
-pub fn insert_room (connection: &MysqlConnection, value: &Room) {
+pub fn insert_room (connection: &MysqlConnection, _value: &Room) {
     diesel::insert_into(schema::s_rooms::table)
-        .values(value)
+        .values(_value)
         .execute(connection)
         .expect("Error saving new post");
 }
 
-pub fn insert_selected_pokemon (connection: &MysqlConnection, value: &SelectedPokemon) {
+pub fn insert_selected_pokemon (connection: &MysqlConnection, _value: &SelectedPokemon) {
     diesel::insert_into(schema::s_selected_pokemons::table)
-        .values(value)
+        .values(_value)
         .execute(connection)
         .expect("Error saving new post");
 }
 
-pub fn insert_battle_pokemon (connection: &MysqlConnection, value: &BattlePokemon) {
+pub fn insert_battle_pokemon (connection: &MysqlConnection, _value: &BattlePokemon) {
     diesel::insert_into(schema::p_in_battle_pokemons::table)
-        .values(value)
+        .values(_value)
         .execute(connection)
         .expect("Error saving new post");
 }
 
-pub fn insert_command (connection: &MysqlConnection, value: &Command) {
+pub fn insert_command (connection: &MysqlConnection, _value: &Command) {
     diesel::insert_into(schema::f_commands::table)
-        .values(value)
+        .values(_value)
+        .execute(connection)
+        .expect("Error saving new post");
+}
+
+pub fn insert_show_battle (connection: &MysqlConnection, _value: &Vec<ShowBattle>) {
+    diesel::insert_into(schema::f_show_battles::table)
+        .values(_value)
+        .execute(connection)
+        .expect("Error saving new post");
+}
+
+
+//---------------------update------------------------------------------------
+pub fn update_field_done_turn (connection: &MysqlConnection, _room_id: i32, _turn: &i32) {
+    diesel::update(f_fields.filter(schema::f_fields::room_id.eq(_room_id)))
+        .set(schema::f_fields::done_turn.eq(_turn))
         .execute(connection)
         .expect("Error saving new post");
 }
@@ -201,22 +232,32 @@ pub fn search_another_player (connection: &MysqlConnection, _room_id: &i32, _pla
     if room[0].player1_id == *_player_id {room[0].player2_id} else {room[0].player1_id}
 }
 
-pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> ReturnPokemon {
-    let made_pokemon = search_made_pokemon(connection, _made_pokemon_id);
-    let base_pokemon = search_base_pokemon(connection, made_pokemon[0].base_pokemon_id);
-    let battle_pokemon = search_battle_pokemons(&connection, _made_pokemon_id, "made_pokemon_id");
+pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> ReturnPokemon1 {
+    let made_pokemon = search_made_pokemon(connection, _made_pokemon_id).pop().unwrap();
+    let base_pokemon = search_base_pokemon(connection, made_pokemon.base_pokemon_id).pop().unwrap();
+    let battle_pokemon = search_battle_pokemons(&connection, _made_pokemon_id, "made_pokemon_id").pop().unwrap();
 
-    let mut moves: Vec<Vec<MoveBase>> = vec![Default::default()];
-    moves.push(search_move_base(&connection, made_pokemon[0].move1_id));
+    let mut moves: Vec<MoveBase> = Vec::new();
+    moves.push(search_move_base(&connection, made_pokemon.move1_id).pop().unwrap());
     // moves.push(search_move_base(&connection, made_pokemon[0].move2_id));
     // moves.push(search_move_base(&connection, made_pokemon[0].move3_id));
     // moves.push(search_move_base(&connection, made_pokemon[0].move4_id));
 
-    ReturnPokemon {
+    ReturnPokemon1 {
         made_pokemon: made_pokemon,
         base_pokemon: base_pokemon,
         battle_pokemon: battle_pokemon,
         moves: moves,    
+    }
+}
+
+pub fn check_done_turn(connection: &MysqlConnection, _room_id: i32) -> bool {
+    let field = &search_field(connection, _room_id)[0];
+    if field.turn > field.done_turn {
+        update_field_done_turn(connection, _room_id, &field.turn);
+        false
+    } else {
+        true
     }
 }
 
@@ -237,36 +278,36 @@ pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> Re
 
 
 //すばやさ比較
-pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon, pokemon2: &'a ReturnPokemon)
+pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon1, pokemon2: &'a ReturnPokemon1)
      -> bool {
-    pokemon1.made_pokemon[0].s_v > pokemon2.made_pokemon[0].s_v
+    pokemon1.made_pokemon.s_v > pokemon2.made_pokemon.s_v //素早さ同じときの処理かく
 }
 
 //バトル
 pub fn doBattle<'a>(atk_info: &BattleInfo, def_info: &BattleInfo, mut show_battles: Vec<ShowBattle>)
      -> Vec<ShowBattle> {
     //攻撃使用
-    show_battles.push(ShowBattle {kind: 100, pokemon_id: atk_info.pokemon.made_pokemon[0].id, player_id:atk_info.player_id, ..ShowBattle::new(&atk_info.moving[0].name)});
+    show_battles.push(ShowBattle {kind: 100, pokemon_id: atk_info.pokemon.made_pokemon.id, player_id:atk_info.player_id, ..ShowBattle::new(&atk_info.moving.name)});
     // ダメージ計算
-    let mut damage = from_pokemon_damage_calculate(&atk_info.pokemon, &def_info.pokemon, &atk_info.moving[0]);
+    let mut damage = from_pokemon_damage_calculate(&atk_info.pokemon, &def_info.pokemon, &atk_info.moving);
     println!("{:?}", damage);
     //急所
-    let (critical, damage, show_battles) = check_critical_hit(&atk_info.pokemon.battle_pokemon[0].vital_updown, &damage, show_battles, &def_info);
+    let (critical, damage, show_battles) = check_critical_hit(&atk_info.pokemon.battle_pokemon.vital_updown, &damage, show_battles, &def_info);
     //タイプ一致
-    let (type_match, damage) = from_pokemon_check_type_match(&atk_info.pokemon, &atk_info.moving[0], damage);
+    let (type_match, damage) = from_pokemon_check_type_match(&atk_info.pokemon, &atk_info.moving, damage);
     // タイプ相性
-    let (type_compatibility, damage, mut show_battles) = from_pokemon_check_type_compatibility(&def_info.pokemon, &atk_info.moving[0], damage, show_battles, &def_info);
+    let (type_compatibility, damage, mut show_battles) = from_pokemon_check_type_compatibility(&def_info.pokemon, &atk_info.moving, damage, show_battles, &def_info);
     println!("{:?}", damage);
     //ダメージ入力
-    show_battles.push(ShowBattle {kind: 101, pokemon_id:  def_info.pokemon.made_pokemon[0].id, value: damage, player_id:def_info.player_id, ..Default::default()});
+    show_battles.push(ShowBattle {kind: 101, pokemon_id:  def_info.pokemon.made_pokemon.id, value: damage, player_id:def_info.player_id, ..Default::default()});
 
     show_battles
 }
 
-fn from_pokemon_damage_calculate(atk_pokemon: &ReturnPokemon, def_pokemon: &ReturnPokemon, moving: &MoveBase) -> i32 {
-    damage_calculate(&atk_pokemon.made_pokemon[0].level, 
-        if moving.kind==1 {&atk_pokemon.made_pokemon[0].a_v} else {&atk_pokemon.made_pokemon[0].c_v},
-        if moving.kind==1 {&def_pokemon.made_pokemon[0].b_v} else {&def_pokemon.made_pokemon[0].d_v},
+fn from_pokemon_damage_calculate(atk_pokemon: &ReturnPokemon1, def_pokemon: &ReturnPokemon1, moving: &MoveBase) -> i32 {
+    damage_calculate(&atk_pokemon.made_pokemon.level, 
+        if moving.kind==1 {&atk_pokemon.made_pokemon.a_v} else {&atk_pokemon.made_pokemon.c_v},
+        if moving.kind==1 {&def_pokemon.made_pokemon.b_v} else {&def_pokemon.made_pokemon.d_v},
         &moving.power_v)
 }
 
@@ -291,8 +332,8 @@ fn check_critical_hit(rank: &i32, damage: &i32, mut show_battles: Vec<ShowBattle
 }
 
 //タイプ一致
-fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon, moving: &MoveBase, damage: i32) -> (bool, i32) {
-    if atk_pokemon.base_pokemon[0].type1_id | atk_pokemon.base_pokemon[0].type2_id == moving.type_id {
+fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon1, moving: &MoveBase, damage: i32) -> (bool, i32) {
+    if atk_pokemon.base_pokemon.type1_id | atk_pokemon.base_pokemon.type2_id == moving.type_id {
         (true, (damage as f32 * 1.5) as i32)
     } else {
         (false, damage)
@@ -300,9 +341,9 @@ fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon, moving: &MoveBase,
 }
 
 //タイプ相性前処理
-fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo)
+fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon1, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo)
      -> (f32, i32, Vec<ShowBattle>) {
-    let type_compatibility = check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon[0].type1_id)*check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon[0].type2_id);
+    let type_compatibility = check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type1_id)*check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type2_id);
     let _kind = match (type_compatibility) {
         0.5 | 0.25 => 104, //少数の書き方あってるかわからない
         2.0 | 4.0 => 105,

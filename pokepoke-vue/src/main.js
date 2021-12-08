@@ -8,6 +8,6 @@ app.mount('#app')
 
 import axios from 'axios'
 app.config.globalProperties.$http = axios;
-app.config.globalProperties.$player_id = 1;
+// app.config.globalProperties.$player_id = 1;
 
 export default app
