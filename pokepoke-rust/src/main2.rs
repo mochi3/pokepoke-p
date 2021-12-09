@@ -3,6 +3,7 @@ use pokepoke_rust::*;
 use models::*;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize}; //一旦Pokemonで使うので
+use std::time::Duration;
 
 
 use pokepoke_rust::schema::p_made_pokemons::dsl::*;
@@ -13,7 +14,7 @@ use pokepoke_rust::schema::s_players::dsl::*;
 use pokepoke_rust::schema::s_rooms::dsl::*;
 use pokepoke_rust::schema::s_selected_pokemons::dsl::*;
 
-use diesel::associations::HasTable;
+// use diesel::associations::HasTable;
 
 // use schema::s_rooms;
 // use schema::s_selected_pokemons;
@@ -40,21 +41,6 @@ async fn main() -> std::io::Result<()> {
         .await //Future に対して .await を作用させると、Future の完了を待って、その結果を取得することができます
 }
 
-use std::time::Duration;
-
-async fn re(i: i32) -> String {
-    // for i in 0..10 {
-        println!("{}", 1);
-        tokio::time::delay_for(Duration::from_millis(1000)).await; //n秒待つ
-        if i > 5 {
-            println!("{}", "こえた");
-            "ok".to_string()
-        } else {
-            "no".to_string()
-        }
-    // }
-    // "ok".to_string()
-}
 
 #[get("/print/{_player_id}")]
 async fn print(web::Path(_player_id): web::Path<u32>) -> impl Responder { //asyncがついてるので非同期関数（futureを返す関数）
@@ -94,7 +80,7 @@ async fn do_login(data: web::Json<Player>) -> impl Responder {
     println!("{:?}", searched_player);
     if searched_player == [] { //PlayerにEqを実装
         HttpResponse::BadRequest().body("ID is not found") //一旦BadRequestを使う
-    } else if (&searched_player[0].password == &data.password) {
+    } else if &searched_player[0].password == &data.password {
         HttpResponse::Ok().json(&searched_player[0])
     } else {
         HttpResponse::BadRequest().body("Password is bad")
@@ -107,7 +93,7 @@ async fn index(web::Path((column_name, value)): web::Path<(String, u32)>) -> imp
     println!("{},{}", column_name, value);
     let connection = establish_connection();
     let value: i32 = value as i32;
-    let mut searched_made_pokemon: Vec<MadePokemon> = vec![Default::default()];
+    let mut searched_made_pokemon: Vec<MadePokemon> = Vec::new();
 
     match (&*column_name, value) {
         (_, 0) => searched_made_pokemon = p_made_pokemons
@@ -190,8 +176,8 @@ async fn get_battle_pokemon(web::Path((req_room_id, req_player_id)): web::Path<(
     let connection = establish_connection();
     let your_player_id = search_another_player(&connection, &req_room_id, &req_player_id);
 
-    let my_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, req_player_id, "player_id");
-    let your_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, your_player_id, "player_id");
+    // let _my_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, req_player_id, "player_id");
+    // let _your_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, your_player_id, "player_id");
     // let my_first_id: &i32 = &my_battle_pokemons.into_iter().filter(|v| v.number == 1).collect::<Vec<BattlePokemon>>()[0].made_pokemon_id;
     let my_first_id: i32 = search_battle_pokemons_first(&connection, req_player_id)[0].made_pokemon_id;
     let your_first_id: i32 = search_battle_pokemons_first(&connection, your_player_id)[0].made_pokemon_id;
@@ -228,7 +214,7 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
     //相手の情報取得
     let your_player_id = search_another_player(&connection, &req_room_id, &req_player_id);
 
-    for i in 0..900 { //最大3分
+    for _i in 0..900 { //最大3分
         println!("{}", req_player_id);
         tokio::time::delay_for(Duration::from_millis(200)).await; //nミリ秒待つ
         if search_command(&connection, req_room_id, your_player_id, turn).len() > 0 {
@@ -241,7 +227,7 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
     println!("{:?}がbreakしてフラグ{:?}", req_player_id, do_check_flg);
     if do_check_flg {
         println!("{:?}", "checkしない");
-        for i in 0..300 { //最大1分
+        for _i in 0..300 { //最大1分
             tokio::time::delay_for(Duration::from_millis(200)).await; //nミリ秒待つ
             if search_show_battles(&connection, req_room_id).len() > 0 { //処理が終わってたら
                 break;
@@ -273,8 +259,8 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
     //フロントに返すやつ
     let mut show_battles: Vec<ShowBattle> = vec![Default::default()];
     // let show_battle_base = ShowBattle {room_id: req_room_id, turn: turn, ..Default::default()}
-    show_battles = doBattle(&first, &second, show_battles);
-    show_battles = doBattle(&second, &first, show_battles);
+    show_battles = do_battle(&first, &second, show_battles);
+    show_battles = do_battle(&second, &first, show_battles);
     show_battles.iter_mut().map(|x| x.room_id = req_room_id).collect::<Vec<_>>();
     insert_show_battle(&connection, &show_battles);
 

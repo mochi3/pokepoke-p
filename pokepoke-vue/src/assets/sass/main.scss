@@ -2,6 +2,7 @@ $green-colors: (
     base: #7ba390,
     light: #a6d1bc,
     light-hover: #d5e5dc,
+    light-disabled: #989f9b,
     light-gray: #b9cbc2,
     // dark: #636866,
     dark: #52625b,
@@ -24,6 +25,24 @@ button {
 
     &:hover {
         color: green(dark-hover);
+    }
+}
+
+.green-button {
+    font-size: 1rem;
+    background-color: green(light);
+    width: 14rem;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    box-shadow: 1px 4px 3px -2px #979d97;
+    &:hover {
+        background-color: green(light-hover);
+    }
+    &:disabled {
+        background-color: green(light-disabled);
+        &:hover {
+            color: green(dark);
+        }
     }
 }
 

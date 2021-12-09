@@ -19,6 +19,7 @@ table! {
         order -> Integer,
         is_sound -> Integer,
         is_powder -> Integer,
+        is_direct -> Integer,
         kind -> Integer,
     }
 }

@@ -119,6 +119,7 @@ pub struct MoveBase {
     pub order: i32,
     pub is_sound: i32,
     pub is_powder: i32,
+    pub is_direct: i32,
     pub kind: i32,
 }
 

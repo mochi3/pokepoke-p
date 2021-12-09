@@ -14,6 +14,28 @@ button:hover {
   color: #a8b3ad;
 }
 
+.green-button {
+  font-size: 1rem;
+  background-color: #a6d1bc;
+  width: 14rem;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  -webkit-box-shadow: 1px 4px 3px -2px #979d97;
+          box-shadow: 1px 4px 3px -2px #979d97;
+}
+
+.green-button:hover {
+  background-color: #d5e5dc;
+}
+
+.green-button:disabled {
+  background-color: #989f9b;
+}
+
+.green-button:disabled:hover {
+  color: #52625b;
+}
+
 .input-area {
   display: -webkit-box;
   display: -ms-flexbox;

@@ -5,7 +5,7 @@
   <div class="select-page">
     <div class="select-box">
       <div class="create-area">
-        <div class="title">ポケモンを作成</div>
+        <button class="green-button">ポケモンを作成</button>
       </div>
       <div class="choose-area">
         <div class="title">ポケモンを選択</div>
@@ -89,6 +89,7 @@ export default {
       background-color: white;
       border-radius: 2rem;
       width: 500px;
+      padding: 10px;
       .title {
         display: flex;
         align-items: center;

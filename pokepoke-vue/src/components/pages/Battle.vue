@@ -1,60 +1,20 @@
 @import "@/assets/sass/main.scss";
 <template>
-  <div class="battle-page">
+  <BattlePokemonChangePop v-if="isShowPokemonChangePop" @closePokemonChangePop="closePokemonChangePop"
+   :pokemons="forPokemonChangePopValue" :fieldPokemonNumber="my_field_pokemon.battle.number"></BattlePokemonChangePop>
 
+  <div class="battle-page">
     <div class="battle-area">
       <div class="field-area">
         <div class="pokemon-area my" v-if="showMyPokemonArea">
-          <div class="status-box">
-            <div class="status-top">
-                <div class="pokemon-name">{{my_field_pokemon.made.nickname}}</div>
-              <div class="status-top-right">
-                <div class="pokemon-gender">{{my_field_pokemon.made.gender_name}}</div>
-                <div class="pokemon-level">Lv. {{my_field_pokemon.made.level}}</div>
-              </div>
-            </div>
-            <div class="hp-box">
-              <div class="hp-base">
-                <div class="hp-hp">HP</div>
-                <div class="hp-bar-outer">
-                  <div class="hp-bar-inner" :class="{red: (my_hp_new / my_field_pokemon.made.max_hp)<0.1, yellow: (my_hp_new / my_field_pokemon.made.max_hp)<0.3}" 
-                  v-bind:style="{ width: (my_hp_new / my_field_pokemon.made.max_hp)*100 + '%' }"></div>
-                </div>
-              </div>
-            </div>
-            <div class="status-under">
-              <div class="hp-number">{{my_hp_new}} / {{my_field_pokemon.made.max_hp}}</div>
-              <div class="ailment"></div>
-            </div>
-          </div>
+          <StatusBox :pokemon="my_field_pokemon" :nowHp="my_hp_new"></StatusBox>
           <div class="pokemon-shadow"></div>
           <img :src="require('@/assets/images/' + my_field_pokemon.base.id + '.png')">
         </div>
         <div class="pokemon-area my" v-if="!showMyPokemonArea">
         </div>
         <div class="pokemon-area your" v-if="showYourPokemonArea">
-          <div class="status-box">
-            <div class="status-top">
-                <div class="pokemon-name">{{your_field_pokemon.made.nickname}}</div>
-              <div class="status-top-right">
-                <div class="pokemon-gender">{{your_field_pokemon.made.gender_name}}</div>
-                <div class="pokemon-level">Lv. {{your_field_pokemon.made.level}}</div>
-              </div>
-            </div>
-            <div class="hp-box">
-              <div class="hp-base">
-                <div class="hp-hp">HP</div>
-                <div class="hp-bar-outer">
-                  <div class="hp-bar-inner" :class="{red: (your_hp_new / your_field_pokemon.made.max_hp)<0.1, yellow: (your_hp_new / your_field_pokemon.made.max_hp)<0.3}" 
-                  v-bind:style="{ width: (your_hp_new / your_field_pokemon.made.max_hp)*100 + '%' }"></div>
-                </div>
-              </div>
-            </div>
-            <div class="status-under">
-              <div class="hp-number">{{your_hp_new}} / {{your_field_pokemon.made.max_hp}}</div>
-              <div class="ailment"></div>
-            </div>
-          </div>
+          <StatusBox :pokemon="your_field_pokemon" :nowHp="your_hp_new"></StatusBox>
           <div class="pokemon-shadow"></div>
           <img :src="require('@/assets/images/' + your_field_pokemon.base.id + '.png')">          
         </div>
@@ -89,11 +49,16 @@
 </template>
 
 <script>
-
+import BattlePokemonChangePop from '@/components/modules/BattlePokemonChangePop'
+import StatusBox from '@/components/modules/StatusBox'
 import const_modules from "@/const-data.js";
 
 export default {
   name: 'Battle',
+  components: {
+    BattlePokemonChangePop,
+    StatusBox
+  },
   props: {
     // msg: String,
   },
@@ -104,6 +69,7 @@ export default {
       showMovesArea: false,
       showMyPokemonArea: false,
       showYourPokemonArea: false,
+      isShowPokemonChangePop: false,
       first_commands: const_modules.COMMANDS,
       // moves: [],
       my_field_pokemon: {},
@@ -111,7 +77,7 @@ export default {
       your_field_pokemon: {},
       your_hp_new: 0,
       narration: "",
-      non: function() {},
+      forPokemonChangePopValue: [],
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     }
   },
@@ -172,7 +138,12 @@ export default {
       this.$http.get(`/battle-change-pokemons/${this.$player_id}`) //ルームID,プレーヤーID,コマンドID,技ID
         .then(res => {
           console.log(res);
+          this.forPokemonChangePopValue = res.data;
+          this.isShowPokemonChangePop = true;
         })
+    },
+    closePokemonChangePop() {
+      this.isShowPokemonChangePop = false;
     },
     doMove(id) { //技選択
       this.showButtonArea = false;
@@ -270,6 +241,8 @@ export default {
       border-radius: 10px;
       background-color: #ffffff;
       max-width: 50rem;
+      // background-image: url(../../assets/images/ground.jpeg);
+      // background-size: cover;
 
       .field-area {
         height: 75%;
@@ -323,105 +296,23 @@ export default {
             right: 3vw;
           }
         }
-        //------------ステータス共通--------------------------------------
-        .status-box {
-          border: solid 2px #3c3c3c;
-          width: 20vw;
-          padding: 1% 2% 0;
-          border-radius: 0.3rem;
-          box-shadow: 6px 7px 4px -1px #a8ada8;
-          position: absolute;
-          //-----------ステータス上部------------------
-          .status-top {
-            display: flex;
-            justify-content: space-between;
-            
-            .pokemon-name {
-
-            }
-            .status-top-right {
-              display: flex;
-              width: 35%;
-              justify-content: space-between;
-              .pokemon-gender {
-                padding-top: 6%;
-                font-size: 78%;
-              }
-              .pokemon-level {
-                font-size: 94%;
-                margin-top: 4%;
-              }
-            }
-          }//---------------HP-------------------
-          .hp-box {
-            .hp-base {
-              width: 99%;
-              height: 0.5rem;
-              background-color: #3c3c3c;
-              border-radius: 0.5rem;
-              display: flex;
-              padding: 0.05rem;
-              align-items: center;
-              justify-content: space-around;
-
-              .hp-hp {
-                color: #cf4e4e;
-                font-weight: bold;
-                font-size: 0.2rem;
-                width: 9%;
-              }
-              .hp-bar-outer {
-                width: 83%;
-                height: 60%;
-                .hp-bar-inner {
-                  width: 100%;
-                  height: 100%;
-                  background-color: #7ac175;
-                  border-radius: 0.3rem;
-                  transition: width 1s ease, background-color 1s ease;
-                  &.red {
-                    background-color: #e53a3a;
-                  }
-                  &.yellow {
-                    background-color: #f1cf27;
-                  }
-                }
-              }
-            }
-          }//-----------ステータス下部------------------
-          .status-under {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-            .hp-number {
-
-            }
-            .ailment {
-              font-size: 0.5rem;
-              border-radius: 1rem;
-              padding: 0 0.5rem;
-              margin: 0.1rem 0;
-              // background-color: #af4c13;
-              color: white;
-              display: flex;
-              align-items: center;
-              // box-shadow: 3px 4px 3px -2px #686868;
-            }
-          }
-        }
         //--------------ステータス個別--------------------------
+        .status-box {
+          position: absolute;
+        }
         .pokemon-area.my .status-box {
           right: -7vw;
           bottom: 11vw;
         }
         .pokemon-area.your .status-box {
           top: 3vw;
-          left: -8vw;        }
+          left: -8vw;
+        }
       }
       //------------メッセージ欄----------------------
       .message-area {
         display: flex;
-        height: 25%;
+        height: 28%;
 
         %message-box {
           border: solid 4px green(light-gray);
@@ -435,36 +326,48 @@ export default {
           width: 70%;
           margin-right: 3px;
           padding: 0.5rem 1.2rem;
+          background-color: white;
 
           //-----------------わざ-----------------------------
-          button {
-            border: solid 2px #3c3c3c;
-            border-radius: 5px;
-            box-shadow: 3px 5px 4px -1px #a8ada8;
-            color: #3c3c3c;
-            padding: 0.2rem 1rem;
+          .moves-area {
             display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
             align-items: center;
 
-            .move-name {
-            }
-            .move-under {
+            button {
+              border: solid 2px #3c3c3c;
+              border-radius: 5px;
+              box-shadow: 3px 5px 4px -1px #a8ada8;
+              color: #3c3c3c;
+              padding: 0.1rem 0.6rem;
               display: flex;
               align-items: center;
-              font-size: 0.3rem;
-              flex-direction: column;
-              margin-left: 1rem;
-              color: white;
+              justify-content: space-between;
+              width: 48%;
+              height: 45%;
+              font-size: 0.8rem;
 
-              .move-type {
-                border: solid 1px #ffffff;
-                border-radius: 2rem;
-                padding: 0.05rem 0.4rem;
-                box-shadow: 2px 3px 4px -2px #686868;
-                font-size: 0.2rem;        
-                background-color: #00000038;      
+              .move-name {
               }
-              .move-pp {
+              .move-under {
+                display: flex;
+                align-items: center;
+                font-size: 0.3rem;
+                flex-direction: column;
+                margin-left: 1rem;
+                color: white;
+
+                .move-type {
+                  border: solid 1px #ffffff;
+                  border-radius: 2rem;
+                  padding: 0.05rem 0.4rem;
+                  box-shadow: 2px 3px 4px -2px #686868;
+                  font-size: 0.2rem;        
+                  background-color: #00000038;      
+                }
+                .move-pp {
+                }
               }
             }
           }
@@ -478,6 +381,7 @@ export default {
           padding: 0.6rem 0;
           width: 30%;
           margin-left: 3px;
+          background-color: white;
 
           button {
             font-size: 1rem;

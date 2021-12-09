@@ -5,7 +5,7 @@
     <button @click="loginBattle(1)">player1-battle</button>
     <button @click="loginBattle(2)">player2-battle</button>
     <button @click="print(1)">print1</button>
-    <button @click="print(2)">print2</button>
+    <button @click="select(1)">select1</button>
   </div>
 </template>
 
@@ -28,7 +28,11 @@ export default {
         .then(res => {
           console.log(res)
         })
-    }
+    },
+    select(id) {
+      app.config.globalProperties.$player_id = id;
+      this.$router.push("/select");
+    },
   },
 }
 </script>

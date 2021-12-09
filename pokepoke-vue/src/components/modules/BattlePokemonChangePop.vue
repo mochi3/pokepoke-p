@@ -3,52 +3,43 @@
 <template>
   <div class="pop-overwrap" @click.self="close()">
     <div class="battle-pokemon-change-box">
-      <div class="pokemon-box" v-for="pokemon in madePokemons" :key="pokemon.id">
-        <img :src="require('@/assets/images/' + pokemon.base_pokemon_id + '.png')">
-        <div class="pokemon-name">{{pokemon.nickname}}</div>
+      <div class="pokemon-box" v-for="pokemon in formattedPokemons" :key="pokemon.made.id" :class="{field: pokemon.battle.number==fieldPokemonNumber}">
+        <div class="pokemon-box-top">
+          <img :src="require('@/assets/images/' + pokemon.made.base_pokemon_id + '.png')">
+          <StatusBox :pokemon="pokemon" :nowHp="pokemon.nowHp"></StatusBox>
+        </div>
+        <button class="green-button" :disabled="pokemon.battle.number==fieldPokemonNumber">交換する</button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import app from '@/main.js'
+import StatusBox from '@/components/modules/StatusBox'
 
 export default {
-  name: 'SelectRoomPop',
+  name: 'BattlePokemonChangePop',
+  components: {
+    StatusBox
+  },
   props: {
-    // checkedPokemons: []
+    pokemons: [],
+    fieldPokemonNumber: Number,
   },
   data() {
     return {
-      roomId: '',
-      roomPass: '',
-      toggleMakeIn: true, 
+      formattedPokemons: [],
     }
   },
   methods: {
     close() {
       console.log("close");
-      this.$emit('closeChangePop');
+      this.$emit('closePokemonChangePop');
     },
-    toggle() {
-      this.toggleMakeIn = !this.toggleMakeIn;
-    },
-    doRoom() {
-      let req = {
-        room_id: this.roomId,
-        password: this.roomPass,
-        player1_id: this.$player_id,
-        player2_id: 0,
-        id: 0,
-        is_double_battle: 0,
-      }
-      this.$http.post((this.toggleMakeIn)? '/make-room': '/make-room', req)
-        .then(res => {
-          app.config.globalProperties.$room_id = res.data.id //部屋id
-          this.$emit('goToRoom',res.data.id); 
-        })
-    }
+  },
+  created: function() {
+    this.formattedPokemons = this.pokemons.map(v => v = {made: v[1], battle: v[0], nowHp: v[1].max_hp - v[0].hp_minus});
+    console.log(this.formattedPokemons);
   }
 }
 </script>
@@ -65,6 +56,30 @@ export default {
       // justify-content: center;
       align-items: center;
       flex-direction: column;
+      justify-content: center;
+
+      .pokemon-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 20px;
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .pokemon-box-top {
+          display: flex;
+          align-items: center;
+
+          img {
+            width: 80px;
+          }
+        }
+
+        button {
+          font-size: 0.9rem;
+        }
+      }
     }
   }
 </style>

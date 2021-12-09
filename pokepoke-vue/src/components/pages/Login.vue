@@ -14,8 +14,8 @@
         </div>
       </div>
       <div class="login-area">
-        <button class="login-button" @click="doLogin()">ログイン</button>
-        <button class="new-login-button">新規作成してログイン</button>
+        <button class="login-button green-button" @click="doLogin()">ログイン</button>
+        <button class="new-login-button green-button">新規作成してログイン</button>
       </div>
     </div>
   </div>
@@ -71,15 +71,7 @@ export default {
         align-items: center;
 
         button {
-          font-size: 1rem;
-          background-color: green(light);
-          width: 14rem;
-          padding: 0.5rem 1rem;
-          border-radius: 2rem;
-          box-shadow: 1px 4px 3px -2px #979d97;
-          &:hover {
-            background-color: green(light-hover);
-          }
+          
           &:first-child {
             margin-bottom: 20px;
           }

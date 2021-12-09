@@ -7,8 +7,6 @@ use dotenv::dotenv;
 use std::env;
 use rand::prelude::*; //乱数生成用
 
-use self::models::{Post, NewPost};
-
 pub mod schema;
 pub mod models;
 
@@ -21,8 +19,6 @@ pub fn establish_connection() -> MysqlConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
-
-use schema::posts;
 
 // pub fn create_post<'a>(conn: &MysqlConnection, id: &'a i32, title: &'a str) -> usize {
 //     // use schema::posts;
@@ -238,10 +234,10 @@ pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> Re
     let battle_pokemon = search_battle_pokemons(&connection, _made_pokemon_id, "made_pokemon_id").pop().unwrap();
 
     let mut moves: Vec<MoveBase> = Vec::new();
-    moves.push(search_move_base(&connection, made_pokemon.move1_id).pop().unwrap());
-    // moves.push(search_move_base(&connection, made_pokemon[0].move2_id));
-    // moves.push(search_move_base(&connection, made_pokemon[0].move3_id));
-    // moves.push(search_move_base(&connection, made_pokemon[0].move4_id));
+    if made_pokemon.move1_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move1_id).pop().unwrap())};
+    if made_pokemon.move2_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move2_id).pop().unwrap())};
+    if made_pokemon.move3_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move3_id).pop().unwrap())};
+    if made_pokemon.move4_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move4_id).pop().unwrap())};
 
     ReturnPokemon1 {
         made_pokemon: made_pokemon,
@@ -284,12 +280,12 @@ pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon1, pokemon2: &'a ReturnPokemo
 }
 
 //バトル
-pub fn doBattle<'a>(atk_info: &BattleInfo, def_info: &BattleInfo, mut show_battles: Vec<ShowBattle>)
+pub fn do_battle<'a>(atk_info: &BattleInfo, def_info: &BattleInfo, mut show_battles: Vec<ShowBattle>)
      -> Vec<ShowBattle> {
     //攻撃使用
     show_battles.push(ShowBattle {kind: 100, pokemon_id: atk_info.pokemon.made_pokemon.id, player_id:atk_info.player_id, ..ShowBattle::new(&atk_info.moving.name)});
     // ダメージ計算
-    let mut damage = from_pokemon_damage_calculate(&atk_info.pokemon, &def_info.pokemon, &atk_info.moving);
+    let damage = from_pokemon_damage_calculate(&atk_info.pokemon, &def_info.pokemon, &atk_info.moving);
     println!("{:?}", damage);
     //急所
     let (critical, damage, show_battles) = check_critical_hit(&atk_info.pokemon.battle_pokemon.vital_updown, &damage, show_battles, &def_info);
@@ -344,7 +340,7 @@ fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon1, moving: &MoveBase
 fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon1, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo)
      -> (f32, i32, Vec<ShowBattle>) {
     let type_compatibility = check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type1_id)*check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type2_id);
-    let _kind = match (type_compatibility) {
+    let _kind = match type_compatibility {
         0.5 | 0.25 => 104, //少数の書き方あってるかわからない
         2.0 | 4.0 => 105,
         0.0 => 106,
