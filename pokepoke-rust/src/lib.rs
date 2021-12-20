@@ -78,54 +78,14 @@ use schema::f_show_battles::dsl::*;
 
 //-----------select---------------------------------
 
-pub fn search_made_pokemon (connection: &MysqlConnection, _value: i32)  -> Vec<MadePokemon> {
-    p_made_pokemons.filter(schema::p_made_pokemons::id.eq(_value))
-        .load::<MadePokemon>(connection)
-        .expect("Error loading posts")
+pub fn search_made_pokemons (connection: &MysqlConnection, _id: Option<i32>, _player_id: Option<i32>)  -> Vec<MadePokemon> {
+    let mut query = schema::p_made_pokemons::table.order(schema::p_made_pokemons::id.desc()).into_boxed(); //並び替えてる？
+    query = if let Some(x) = _id {query.filter(schema::p_made_pokemons::id.eq(x))} else {query};
+    query = if let Some(x) = _player_id {query.filter(schema::p_made_pokemons::player_id.eq(x))} else {query};
+    query.load::<MadePokemon>(connection).expect("Error loading posts")
 }
 
-pub fn search_base_pokemon (connection: &MysqlConnection, _value: i32)  -> Vec<BasePokemon> {
-    p_base_pokemons.filter(schema::p_base_pokemons::id.eq(_value))
-        .load::<BasePokemon>(connection)
-        .expect("Error loading posts")
-}
-
-pub fn search_battle_pokemons (connection: &MysqlConnection, _value: i32, column: &str)  -> Vec<BattlePokemon> {
-    if column == "made_pokemon_id" {
-        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::made_pokemon_id.eq(_value))
-            .load::<BattlePokemon>(connection)
-            .expect("Error loading posts")
-    } else if column == "player_id" {
-        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(_value))
-            .load::<BattlePokemon>(connection)
-            .expect("Error loading posts")
-    } else {
-        p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(_value))
-            .load::<BattlePokemon>(connection)
-            .expect("Error loading posts")
-    }
-}
-
-pub fn search_battle_pokemons_first (connection: &MysqlConnection, _player_id: i32)  -> Vec<BattlePokemon> {
-    p_in_battle_pokemons.filter(schema::p_in_battle_pokemons::player_id.eq(_player_id))
-        .filter(schema::p_in_battle_pokemons::number.eq(1))
-        .load::<BattlePokemon>(connection)
-        .expect("Error loading posts")
-}
-
-pub fn search_room (connection: &MysqlConnection, _value: i32) -> Vec<Room> {
-    s_rooms.filter(schema::s_rooms::id.eq(_value))
-        .load::<Room>(connection)
-        .expect("Error loading posts")
-}
-
-pub fn search_select_pokemon (connection: &MysqlConnection, _value: i32) -> Vec<SelectedPokemon> {
-    s_selected_pokemons.filter(schema::s_selected_pokemons::id.eq(_value))
-        .load::<SelectedPokemon>(connection)
-        .expect("Error loading posts")
-}
-
-pub fn search_made_pokemons_by_selected_pokemons (connection: &MysqlConnection, pokemons: &SelectedPokemon) -> Vec<MadePokemon> {
+pub fn search_made_pokemonss_by_selected_pokemons (connection: &MysqlConnection, pokemons: SelectedPokemon) -> Vec<MadePokemon> {
     p_made_pokemons
         .filter(schema::p_made_pokemons::id.eq(pokemons.pokemon1_id))
         .or_filter(schema::p_made_pokemons::id.eq(pokemons.pokemon2_id))
@@ -137,41 +97,65 @@ pub fn search_made_pokemons_by_selected_pokemons (connection: &MysqlConnection, 
         .expect("Error loading p_made_pokemons")
 }
 
-pub fn search_move_base (connection: &MysqlConnection, _value: i32) -> Vec<MoveBase> {
-    m_move_bases.filter(schema::m_move_bases::id.eq(_value))
-        .load::<MoveBase>(connection)
-        .expect("Error loading posts")
+pub fn search_base_pokemons (connection: &MysqlConnection, _id: Option<i32>)  -> Vec<BasePokemon> {
+    let mut query = schema::p_base_pokemons::table.into_boxed();
+    query = if let Some(x) = _id {query.filter(schema::p_base_pokemons::id.eq(x))} else {query};
+    query.load::<BasePokemon>(connection).expect("Error loading posts")
 }
 
-pub fn search_command (connection: &MysqlConnection, _room_id: i32, _player_id: i32, _turn: i32) -> Vec<Command> {
-    f_commands
-        .filter(schema::f_commands::room_id.eq(_room_id))
-        .filter(schema::f_commands::player_id.eq(_player_id))
-        .filter(schema::f_commands::turn.eq(_turn))
-        .load::<Command>(connection)
-        .expect("Error loading posts")
+pub fn search_battle_pokemons (connection: &MysqlConnection, _made_pokemon_id: Option<i32>, _player_id: Option<i32>, _number: Option<i32>)  -> Vec<BattlePokemon> {
+    let mut query = schema::p_in_battle_pokemons::table.into_boxed();
+    query = if let Some(x) = _made_pokemon_id {query.filter(schema::p_in_battle_pokemons::made_pokemon_id.eq(x))} else {query};
+    query = if let Some(x) = _player_id {query.filter(schema::p_in_battle_pokemons::player_id.eq(x))} else {query};
+    query = if let Some(x) = _number {query.filter(schema::p_in_battle_pokemons::number.eq(x))} else {query};
+    query.load::<BattlePokemon>(connection).expect("Error loading posts")
 }
 
-pub fn search_field_pokemon (connection: &MysqlConnection, _room_id: i32, _player_id: i32) -> i32 {
-    f_player_fields
-        .filter(schema::f_player_fields::room_id.eq(_room_id))
-        .filter(schema::f_player_fields::player_id.eq(_player_id))
-        .load::<PlayerField>(connection)
-        .expect("Error loading posts")[0].field_pokemon1_id
+pub fn search_rooms (connection: &MysqlConnection, _id: Option<i32>) -> Vec<Room> {
+    let mut query = schema::s_rooms::table.into_boxed();
+    query = if let Some(x) = _id {query.filter(schema::s_rooms::id.eq(x))} else {query};
+    query.load::<Room>(connection).expect("Error loading posts")
 }
 
-pub fn search_field (connection: &MysqlConnection, _room_id: i32) -> Vec<Field> {
-    f_fields
-        .filter(schema::f_fields::room_id.eq(_room_id))
-        .load::<Field>(connection)
-        .expect("Error loading posts")
+pub fn search_select_pokemons (connection: &MysqlConnection, _id: Option<i32>) -> Vec<SelectedPokemon> {
+    let mut query = schema::s_selected_pokemons::table.into_boxed();
+    query = if let Some(x) = _id {query.filter(schema::s_selected_pokemons::id.eq(x))} else {query};
+    query.load::<SelectedPokemon>(connection).expect("Error loading posts")
 }
 
-pub fn search_show_battles (connection: &MysqlConnection, _room_id: i32) -> Vec<ShowBattle> {
-    f_show_battles
-        .filter(schema::f_show_battles::room_id.eq(_room_id))
-        .load::<ShowBattle>(connection)
-        .expect("Error loading posts")
+pub fn search_move_bases (connection: &MysqlConnection, _id: Option<i32>) -> Vec<MoveBase> {
+    let mut query = schema::m_move_bases::table.into_boxed();
+    if let Some(x) = _id {
+        query = query.filter(schema::m_move_bases::id.eq(x))
+    }
+    query.load::<MoveBase>(connection).expect("Error loading posts")
+}
+
+pub fn search_commands (connection: &MysqlConnection, _room_id: Option<i32>, _player_id: Option<i32>, _turn: Option<i32>) -> Vec<Command> {
+    let mut query = schema::f_commands::table.into_boxed();
+    query = if let Some(x) = _room_id {query.filter(schema::f_commands::room_id.eq(x))} else {query};
+    query = if let Some(x) = _player_id {query.filter(schema::f_commands::player_id.eq(x))} else {query};
+    query = if let Some(x) = _turn {query.filter(schema::f_commands::turn.eq(x))} else {query};
+    query.load::<Command>(connection).expect("Error loading posts")
+}
+
+pub fn search_player_fields (connection: &MysqlConnection, _room_id: Option<i32>, _player_id: Option<i32>) -> Vec<PlayerField> {
+    let mut query = schema::f_player_fields::table.into_boxed();
+    query = if let Some(x) = _room_id {query.filter(schema::f_player_fields::room_id.eq(x))} else {query};
+    query = if let Some(x) = _player_id {query.filter(schema::f_player_fields::player_id.eq(x))} else {query};
+    query.load::<PlayerField>(connection).expect("Error loading posts")
+}
+
+pub fn search_fields (connection: &MysqlConnection, _room_id: Option<i32>) -> Vec<Field> {
+    let mut query = schema::f_fields::table.into_boxed();
+    query = if let Some(x) = _room_id {query.filter(schema::f_fields::room_id.eq(x))} else {query};
+    query.load::<Field>(connection).expect("Error loading posts")
+}
+
+pub fn search_show_battles (connection: &MysqlConnection, _room_id: Option<i32>) -> Vec<ShowBattle> {
+    let mut query = schema::f_show_battles::table.into_boxed();
+    query = if let Some(x) = _room_id {query.filter(schema::f_show_battles::room_id.eq(x))} else {query};
+    query.load::<ShowBattle>(connection).expect("Error loading posts")
 }
 
 //-----------------insert-------------------------------------
@@ -224,22 +208,22 @@ pub fn update_field_done_turn (connection: &MysqlConnection, _room_id: i32, _tur
 //---------------その他DB------------------------------------------
 
 pub fn search_another_player (connection: &MysqlConnection, _room_id: &i32, _player_id: &i32) -> i32 {
-    let room = search_room(&connection, *_room_id);
+    let room = search_rooms(&connection, Some(*_room_id));
     if room[0].player1_id == *_player_id {room[0].player2_id} else {room[0].player1_id}
 }
 
-pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> ReturnPokemon1 {
-    let made_pokemon = search_made_pokemon(connection, _made_pokemon_id).pop().unwrap();
-    let base_pokemon = search_base_pokemon(connection, made_pokemon.base_pokemon_id).pop().unwrap();
-    let battle_pokemon = search_battle_pokemons(&connection, _made_pokemon_id, "made_pokemon_id").pop().unwrap();
+pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> ReturnPokemon {
+    let made_pokemon = search_made_pokemons(connection, Some(_made_pokemon_id), None).pop().unwrap();
+    let base_pokemon = search_base_pokemons(connection, Some(made_pokemon.base_pokemon_id)).pop().unwrap();
+    let battle_pokemon = search_battle_pokemons(&connection, Some(_made_pokemon_id), None, None).pop().unwrap();
 
     let mut moves: Vec<MoveBase> = Vec::new();
-    if made_pokemon.move1_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move1_id).pop().unwrap())};
-    if made_pokemon.move2_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move2_id).pop().unwrap())};
-    if made_pokemon.move3_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move3_id).pop().unwrap())};
-    if made_pokemon.move4_id != 0 {moves.push(search_move_base(&connection, made_pokemon.move4_id).pop().unwrap())};
+    if made_pokemon.move1_id != 0 {moves.push(search_move_bases(&connection, Some(made_pokemon.move1_id)).pop().unwrap())};
+    if made_pokemon.move2_id != 0 {moves.push(search_move_bases(&connection, Some(made_pokemon.move2_id)).pop().unwrap())};
+    if made_pokemon.move3_id != 0 {moves.push(search_move_bases(&connection, Some(made_pokemon.move3_id)).pop().unwrap())};
+    if made_pokemon.move4_id != 0 {moves.push(search_move_bases(&connection, Some(made_pokemon.move4_id)).pop().unwrap())};
 
-    ReturnPokemon1 {
+    ReturnPokemon {
         made_pokemon: made_pokemon,
         base_pokemon: base_pokemon,
         battle_pokemon: battle_pokemon,
@@ -248,7 +232,7 @@ pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> Re
 }
 
 pub fn check_done_turn(connection: &MysqlConnection, _room_id: i32) -> bool {
-    let field = &search_field(connection, _room_id)[0];
+    let field = &search_fields(connection, Some(_room_id)).pop().unwrap();
     if field.turn > field.done_turn {
         update_field_done_turn(connection, _room_id, &field.turn);
         false
@@ -259,8 +243,8 @@ pub fn check_done_turn(connection: &MysqlConnection, _room_id: i32) -> bool {
 
 //参照の方
 // pub fn pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> Pokemon {
-//     let made_pokemon = search_made_pokemon(connection, _made_pokemon_id);
-//     let base_pokemon = search_base_pokemon(connection, made_pokemon[0].base_pokemon_id);
+//     let made_pokemon = search_made_pokemons(connection, _made_pokemon_id);
+//     let base_pokemon = search_base_pokemons(connection, made_pokemon[0].base_pokemon_id);
 //     let battle_pokemon = search_battle_pokemons(&connection, _made_pokemon_id, "made_pokemon_id");
 
 //     Pokemon {
@@ -274,7 +258,7 @@ pub fn check_done_turn(connection: &MysqlConnection, _room_id: i32) -> bool {
 
 
 //すばやさ比較
-pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon1, pokemon2: &'a ReturnPokemon1)
+pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon, pokemon2: &'a ReturnPokemon)
      -> bool {
     pokemon1.made_pokemon.s_v > pokemon2.made_pokemon.s_v //素早さ同じときの処理かく
 }
@@ -300,7 +284,7 @@ pub fn do_battle<'a>(atk_info: &BattleInfo, def_info: &BattleInfo, mut show_batt
     show_battles
 }
 
-fn from_pokemon_damage_calculate(atk_pokemon: &ReturnPokemon1, def_pokemon: &ReturnPokemon1, moving: &MoveBase) -> i32 {
+fn from_pokemon_damage_calculate(atk_pokemon: &ReturnPokemon, def_pokemon: &ReturnPokemon, moving: &MoveBase) -> i32 {
     damage_calculate(&atk_pokemon.made_pokemon.level, 
         if moving.kind==1 {&atk_pokemon.made_pokemon.a_v} else {&atk_pokemon.made_pokemon.c_v},
         if moving.kind==1 {&def_pokemon.made_pokemon.b_v} else {&def_pokemon.made_pokemon.d_v},
@@ -328,7 +312,7 @@ fn check_critical_hit(rank: &i32, damage: &i32, mut show_battles: Vec<ShowBattle
 }
 
 //タイプ一致
-fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon1, moving: &MoveBase, damage: i32) -> (bool, i32) {
+fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon, moving: &MoveBase, damage: i32) -> (bool, i32) {
     if atk_pokemon.base_pokemon.type1_id | atk_pokemon.base_pokemon.type2_id == moving.type_id {
         (true, (damage as f32 * 1.5) as i32)
     } else {
@@ -337,7 +321,7 @@ fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon1, moving: &MoveBase
 }
 
 //タイプ相性前処理
-fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon1, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo)
+fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo)
      -> (f32, i32, Vec<ShowBattle>) {
     let type_compatibility = check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type1_id)*check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type2_id);
     let _kind = match type_compatibility {

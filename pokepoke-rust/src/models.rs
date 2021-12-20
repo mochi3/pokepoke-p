@@ -74,6 +74,7 @@ pub struct BasePokemon {
     pub type2_id: i32,
     pub ability1_id: i32,
     pub ability2_id: i32,
+    pub ability3_id: i32,
     pub hidden_ability_id: i32,
     pub gender_flg: i32,
     pub h_base: i32,
@@ -215,18 +216,8 @@ pub struct NewPost<'a> {
 }
 
 
-
-// ポケモンの情報まとめる用
 #[derive(Debug, Serialize, Default)]
 pub struct ReturnPokemon {
-    pub made_pokemon: Vec<MadePokemon>,
-    pub base_pokemon: Vec<BasePokemon>,
-    pub battle_pokemon: Vec<BattlePokemon>,
-    pub moves: Vec<Vec<MoveBase>>,
-}
-
-#[derive(Debug, Serialize, Default)]
-pub struct ReturnPokemon1 {
     pub made_pokemon: MadePokemon,
     pub base_pokemon: BasePokemon,
     pub battle_pokemon: BattlePokemon,
@@ -237,11 +228,11 @@ pub struct ReturnPokemon1 {
 #[derive(Debug, Default)]
 pub struct BattleInfo {
     pub player_id: i32,
-    pub pokemon: ReturnPokemon1,
+    pub pokemon: ReturnPokemon,
     pub moving: MoveBase,
 }
 impl BattleInfo {
-    pub fn new(player_id: i32, pokemon: ReturnPokemon1, moving: MoveBase) -> BattleInfo {
+    pub fn new(player_id: i32, pokemon: ReturnPokemon, moving: MoveBase) -> BattleInfo {
         BattleInfo { player_id, pokemon, moving }
     }
 }

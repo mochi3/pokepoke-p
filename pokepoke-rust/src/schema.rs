@@ -33,6 +33,7 @@ table! {
         type2_id -> Integer,
         ability1_id -> Integer,
         ability2_id -> Integer,
+        ability3_id -> Integer,
         hidden_ability_id -> Integer,
         gender_flg -> Integer,
         h_base -> Integer,

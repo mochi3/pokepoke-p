@@ -1,11 +1,12 @@
 @import "@/assets/sass/main.scss";
 
 <template>
-  <SelectRoomPop v-if="isShowRoomPop" @closeRoomPop="closeRoomPop" @goToRoom="goToRoom"></SelectRoomPop>
+  <SelectRoomPop v-if="isShowRoomPop" @closeRoomPop="isShowRoomPop = false" @goToRoom="goToRoom"></SelectRoomPop>
+  <MakePokemonPop v-if="isMakePokemonPop" @closeMakePokemonPop="closeMakePokemonPop"></MakePokemonPop>
   <div class="select-page">
     <div class="select-box">
       <div class="create-area">
-        <button class="green-button">ポケモンを作成</button>
+        <button class="green-button" @click="isMakePokemonPop = true">ポケモンを作成</button>
       </div>
       <div class="choose-area">
         <div class="title">ポケモンを選択</div>
@@ -19,19 +20,21 @@
         </div>
       </div>
     </div>
-    <button @click="showRoomPop()" :disabled="checkedPokemons.length == 0">対戦する</button>
+    <button @click="isShowRoomPop = true" :disabled="checkedPokemons.length == 0">対戦する</button>
   </div>
 </template>
 
 <script>
 // import axios from 'axios'
 import SelectRoomPop from '@/components/modules/SelectRoomPop'
+import MakePokemonPop from '@/components/modules/MakePokemonPop'
 // import app from '@/main.js'
 
 export default {
   name: 'Select',
   components: {
-    SelectRoomPop
+    SelectRoomPop,
+    MakePokemonPop
   },
   props: {
     // checkedPokemons: []
@@ -43,15 +46,10 @@ export default {
       showSelectList: false,
       checkedPokemons: [],
       isShowRoomPop: false,
+      isMakePokemonPop: false,
     }
   },
   methods: {
-    showRoomPop() {
-      this.isShowRoomPop = true;
-    },
-    closeRoomPop() {
-      this.isShowRoomPop = false;
-    },
     goToRoom(roomId) {
       // app.config.globalProperties.$selected_pokemons = this.madePokemons.filter(v => this.checkedPokemons.some(x => x == v.id));
       // console.log(this.$selected_pokemons);
@@ -72,7 +70,7 @@ export default {
   created: function() {
     console.log("created");
     this.playerId = this.$player_id;
-    this.$http.get(`/made-pokemon/player_id/${this.playerId}`)
+    this.$http.get(`/made-pokemon/${this.playerId}`)
       .then(res => {
         console.log(res);
         this.madePokemons = res.data;

@@ -1,3 +1,5 @@
+// const { h } = require("@vue/runtime-core");
+
 module.exports = {
     TYPES: [
         {id: 1, name: "ノーマル", color: "#cbcbc3"},
@@ -22,7 +24,7 @@ module.exports = {
     GENDERS: [
         {id: 1, name: "♂"},
         {id: 2, name: "♀"},
-        {id: 3, name: ""},
+        {id: 3, name: "不明"},
     ],
     COMMANDS: [
         {name: "たたかう", id: 1},
@@ -30,7 +32,52 @@ module.exports = {
         {name: "ポケモン", id: 3},
         {name: "にげる", id: 4},
     ],
-
+    STATUS: [
+        {id: 0, value: "h", name: "HP" },
+        {id: 1, value: "a", name: "こうげき"},
+        {id: 2, value: "b", name: "ぼうぎょ"},
+        {id: 3, value: "c", name: "とくこう"},
+        {id: 4, value: "d", name: "とくぼう"},
+        {id: 5, value: "s", name: "すばやさ"},
+    ],
+    ABILITIES: [
+        {id: 8, name: "すながくれ"},
+        {id: 18, name: "もらいび"},
+        {id: 22, name: "いかく"},
+        {id: 24, name: "さめはだ"},
+        {id: 45, name: "すなおこし"},
+        {id: 49, name: "ほのおのからだ"},
+        {id: 50, name: "にげあし"},
+        {id: 76, name: "エアロック"},
+        {id: 84, name: "かるわざ"},
+        {id: 106, name: "ゆうばく"},
+        {id: 120, name: "すてみ"},
+        {id: 138, name: "ねつぼうそう"},
+        {id: 159, name: "すなのちから"},
+    ],
+    NATURES: [
+        {id: 1, name: "さみしがり", up: 1, down: 2},
+        {id: 2, name: "いじっぱり", up: 1, down: 3},
+        {id: 3, name: "やんちゃ", up: 1, down: 4},
+        {id: 4, name: "ゆうかん", up: 1, down: 5},
+        {id: 5, name: "ずぶとい", up: 2, down: 1},
+        {id: 6, name: "わんぱく", up: 2, down: 3},
+        {id: 7, name: "のうてんき", up: 2, down: 4},
+        {id: 8, name: "のんき", up: 2, down: 5},
+        {id: 9, name: "ひかえめ", up: 3, down: 1},
+        {id: 10, name: "おっとり", up: 3, down: 2},
+        {id: 11, name: "うっかりや", up: 3, down: 4},
+        {id: 12, name: "れいせい", up: 3, down: 5},
+        {id: 13, name: "おだやか", up: 4, down: 1},
+        {id: 14, name: "おとなしい", up: 4, down: 2},
+        {id: 15, name: "しんちょう", up: 4, down: 3},
+        {id: 16, name: "なまいき", up: 4, down: 5},
+        {id: 17, name: "おくびょう", up: 5, down: 1},
+        {id: 18, name: "せっかち", up: 5, down: 2},
+        {id: 19, name: "ようき", up: 5, down: 3},
+        {id: 20, name: "むじゃき", up: 5, down: 4},
+        {id: 21, name: "てれや", up: 1, down: 3},
+    ],
 }
 
 

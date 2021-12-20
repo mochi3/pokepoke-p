@@ -26,6 +26,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new()
         .service(index)
         .service(do_login)
+        .service(make_pokemon)
         // .service(get_pokemon_and_relative)
         .service(make_room)
         .service(post_selected_pokemon)
@@ -87,26 +88,21 @@ async fn do_login(data: web::Json<Player>) -> impl Responder {
     }
 }
 
-//①作ったポケモン一覧取得、
-#[get("/made-pokemon/{column_name}/{value}")]
-async fn index(web::Path((column_name, value)): web::Path<(String, u32)>) -> impl Responder {
-    println!("{},{}", column_name, value);
+//ポケモン作成用の情報一覧取得
+#[get("/make-pokemon")]
+async fn make_pokemon() -> impl Responder {
     let connection = establish_connection();
-    let value: i32 = value as i32;
-    let mut searched_made_pokemon: Vec<MadePokemon> = Vec::new();
+    let base_pokemons = search_base_pokemons(&connection, None);
 
-    match (&*column_name, value) {
-        (_, 0) => searched_made_pokemon = p_made_pokemons
-                                        .load::<MadePokemon>(&connection)
-                                        .expect("Error loading posts"),
-        ("player_id", _) => searched_made_pokemon = p_made_pokemons.filter(pokepoke_rust::schema::p_made_pokemons::player_id.eq(value))
-                                        .load::<MadePokemon>(&connection)
-                                        .expect("Error loading posts"),
-        (_, _) => searched_made_pokemon = search_made_pokemon(&connection, value),
-    }    
-    println!("{:?}", searched_made_pokemon);
+    HttpResponse::Ok().json(base_pokemons)
+}
+
+//作ったポケモン一覧取得
+#[get("/made-pokemon/{req_player_id}")]
+async fn index(web::Path(req_player_id): web::Path<i32>) -> impl Responder {
+    let connection = establish_connection();
     web::Json(
-        searched_made_pokemon
+        search_made_pokemons(&connection, None, Some(req_player_id))
     )
 }
 
@@ -141,11 +137,11 @@ async fn get_selected_pokemon(web::Path((req_room_id, req_player_id)): web::Path
     let connection = establish_connection();
     let your_player_id = search_another_player(&connection, &req_room_id, &req_player_id);
 
-    let my_selected_pokemons = &search_select_pokemon(&connection, req_player_id)[0];
-    let your_selected_pokemons = &search_select_pokemon(&connection, your_player_id)[0];
+    let my_selected_pokemons = search_select_pokemons(&connection, Some(req_player_id)).pop().unwrap();
+    let your_selected_pokemons = search_select_pokemons(&connection, Some(your_player_id)).pop().unwrap();
 
-    let my_made_pokemons = search_made_pokemons_by_selected_pokemons(&connection, my_selected_pokemons);
-    let your_made_pokemons = search_made_pokemons_by_selected_pokemons(&connection, your_selected_pokemons);
+    let my_made_pokemons = search_made_pokemonss_by_selected_pokemons(&connection, my_selected_pokemons);
+    let your_made_pokemons = search_made_pokemonss_by_selected_pokemons(&connection, your_selected_pokemons);
 
     HttpResponse::Ok().json([my_made_pokemons, your_made_pokemons])
 }
@@ -176,11 +172,8 @@ async fn get_battle_pokemon(web::Path((req_room_id, req_player_id)): web::Path<(
     let connection = establish_connection();
     let your_player_id = search_another_player(&connection, &req_room_id, &req_player_id);
 
-    // let _my_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, req_player_id, "player_id");
-    // let _your_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, your_player_id, "player_id");
-    // let my_first_id: &i32 = &my_battle_pokemons.into_iter().filter(|v| v.number == 1).collect::<Vec<BattlePokemon>>()[0].made_pokemon_id;
-    let my_first_id: i32 = search_battle_pokemons_first(&connection, req_player_id)[0].made_pokemon_id;
-    let your_first_id: i32 = search_battle_pokemons_first(&connection, your_player_id)[0].made_pokemon_id;
+    let my_first_id: i32 = search_battle_pokemons(&connection, None, Some(req_player_id), Some(1)).pop().unwrap().made_pokemon_id;
+    let your_first_id: i32 = search_battle_pokemons(&connection, None, Some(your_player_id), Some(1)).pop().unwrap().made_pokemon_id;
     let my_first_pokemon = return_pokemon(&connection, my_first_id);
     let your_first_pokemon = return_pokemon(&connection, your_first_id);
 
@@ -192,9 +185,9 @@ async fn get_battle_pokemon(web::Path((req_room_id, req_player_id)): web::Path<(
 async fn get_change_pokemons(web::Path(req_player_id): web::Path<i32>) -> impl Responder {
     let connection = establish_connection();
     let mut battle_made_pokemons: Vec<_> = Vec::new();
-    let my_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, req_player_id, "player_id");
+    let my_battle_pokemons: Vec<BattlePokemon> = search_battle_pokemons(&connection, None, Some(req_player_id), None);
     for battle_pokemon in my_battle_pokemons.into_iter() {
-        battle_made_pokemons.push((battle_pokemon, search_made_pokemon(&connection, battle_pokemon.made_pokemon_id).pop()));
+        battle_made_pokemons.push((battle_pokemon, search_made_pokemons(&connection, Some(battle_pokemon.made_pokemon_id), None).pop()));
     }
     HttpResponse::Ok().json(battle_made_pokemons)
 }
@@ -204,7 +197,7 @@ async fn get_change_pokemons(web::Path(req_player_id): web::Path<i32>) -> impl R
 async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32)>, data: String) -> impl Responder {
     let connection = establish_connection();
     //現在ターン取得
-    let turn = search_field(&connection, req_room_id)[0].turn;
+    let turn = search_fields(&connection, Some(req_room_id)).pop().unwrap().turn;
     
     //コマンドをDBに登録
     let mut my_command: Command = serde_json::from_str(&data).unwrap();
@@ -217,7 +210,7 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
     for _i in 0..900 { //最大3分
         println!("{}", req_player_id);
         tokio::time::delay_for(Duration::from_millis(200)).await; //nミリ秒待つ
-        if search_command(&connection, req_room_id, your_player_id, turn).len() > 0 {
+        if search_commands(&connection, Some(req_room_id), Some(your_player_id), Some(turn)).len() > 0 {
             break;
         }
     }
@@ -229,27 +222,27 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
         println!("{:?}", "checkしない");
         for _i in 0..300 { //最大1分
             tokio::time::delay_for(Duration::from_millis(200)).await; //nミリ秒待つ
-            if search_show_battles(&connection, req_room_id).len() > 0 { //処理が終わってたら
+            if search_show_battles(&connection, Some(req_room_id)).len() > 0 { //処理が終わってたら
                 break;
             }
         }
         println!("{:?}", "かえす");
-        return HttpResponse::Ok().json(search_show_battles(&connection, req_room_id))
+        return HttpResponse::Ok().json(search_show_battles(&connection, Some(req_room_id)))
     }
 
-    let your_command = &search_command(&connection, req_room_id, your_player_id, turn)[0];
+    let your_command = search_commands(&connection, Some(req_room_id), Some(your_player_id), Some(turn)).pop().unwrap();
 
     //それぞれのポケモン、技
-    let my_pokemon_id = search_field_pokemon(&connection, req_room_id, req_player_id);
-    let your_pokemon_id = search_field_pokemon(&connection, req_room_id, your_player_id);
+    let my_pokemon_id = search_player_fields(&connection, Some(req_room_id), Some(req_player_id)).pop().unwrap().field_pokemon1_id;
+    let your_pokemon_id = search_player_fields(&connection, Some(req_room_id), Some(your_player_id)).pop().unwrap().field_pokemon1_id;
     let my_pokemon = return_pokemon(&connection, my_pokemon_id);
     let your_pokemon = return_pokemon(&connection, your_pokemon_id);
 
     //両方がバトル選択
 
     //技検索
-    let my_move = search_move_base(&connection, my_command.command_id).pop().unwrap();
-    let your_move = search_move_base(&connection, your_command.command_id).pop().unwrap();
+    let my_move = search_move_bases(&connection, Some(my_command.command_id)).pop().unwrap();
+    let your_move = search_move_bases(&connection, Some(your_command.command_id)).pop().unwrap();
     let my_battle_info = BattleInfo::new(req_player_id, my_pokemon, my_move);
     let your_battle_info = BattleInfo::new(your_player_id, your_pokemon, your_move);
 
@@ -281,8 +274,8 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
 //     let connection = establish_connection();
 //     let value: i32 = value as i32;
 
-//     let search_made_pokemon = search_made_pokemon(&connection, value);
-//     let search_base_pokemon = search_base_pokemon(&connection, search_made_pokemon[0].base_pokemon_id);
+//     let search_made_pokemons = search_made_pokemons(&connection, value);
+//     let search_base_pokemons = search_base_pokemons(&connection, search_made_pokemons[0].base_pokemon_id);
     
 //     let search_battle_pokemon = p_in_battle_pokemons.filter(made_pokemon_id.eq(value))
 //         .load::<BattlePokemon>(&connection)
@@ -290,16 +283,16 @@ async fn do_command(web::Path((req_room_id, req_player_id)): web::Path<(i32, i32
 
 //     let mut moves: Vec<Vec<MoveBase>> = vec![Default::default()];
 //     //技情報
-//     moves.push(search_move_base(&connection, search_made_pokemon[0].move1_id));
-//     // moves.push(search_move_base(&connection, search_made_pokemon[0].move2_id));
-//     // moves.push(search_move_base(&connection, search_made_pokemon[0].move3_id));
-//     // moves.push(search_move_base(&connection, search_made_pokemon[0].move4_id));
+//     moves.push(search_move_bases(&connection, search_made_pokemons[0].move1_id));
+//     // moves.push(search_move_bases(&connection, search_made_pokemons[0].move2_id));
+//     // moves.push(search_move_bases(&connection, search_made_pokemons[0].move3_id));
+//     // moves.push(search_move_bases(&connection, search_made_pokemons[0].move4_id));
 //     println!("{:?}", moves);
 
 //     web::Json(
 //         {ReturnPokemon 
-//             {made_pokemon: search_made_pokemon,
-//             base_pokemon: search_base_pokemon,
+//             {made_pokemon: search_made_pokemons,
+//             base_pokemon: search_base_pokemons,
 //             battle_pokemon: search_battle_pokemon,
 //             moves: moves,
 //         }}
