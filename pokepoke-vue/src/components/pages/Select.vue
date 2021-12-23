@@ -2,11 +2,11 @@
 
 <template>
   <SelectRoomPop v-if="isShowRoomPop" @closeRoomPop="isShowRoomPop = false" @goToRoom="goToRoom"></SelectRoomPop>
-  <MakePokemonPop v-if="isMakePokemonPop" @closeMakePokemonPop="closeMakePokemonPop"></MakePokemonPop>
+  <MakePokemonPop v-if="isShowMakePokemonPop" @closeMakePokemonPop="closeMakePokemonPop"></MakePokemonPop>
   <div class="select-page">
     <div class="select-box">
       <div class="create-area">
-        <button class="green-button" @click="isMakePokemonPop = true">ポケモンを作成</button>
+        <button class="submit-button green" @click="isShowMakePokemonPop = true">ポケモンを作成</button>
       </div>
       <div class="choose-area">
         <div class="title">ポケモンを選択</div>
@@ -20,7 +20,7 @@
         </div>
       </div>
     </div>
-    <button @click="isShowRoomPop = true" :disabled="checkedPokemons.length == 0">対戦する</button>
+    <button class="submit-button white" @click="isShowRoomPop = true" :disabled="checkedPokemons.length == 0">対戦する</button>
   </div>
 </template>
 
@@ -46,10 +46,18 @@ export default {
       showSelectList: false,
       checkedPokemons: [],
       isShowRoomPop: false,
-      isMakePokemonPop: false,
+      isShowMakePokemonPop: false,
     }
   },
   methods: {
+    getMadePokemon() {
+      this.$http.get(`/made-pokemon/${this.playerId}`)
+        .then(res => {
+          console.log(res);
+          this.madePokemons = res.data;
+          this.showSelectList = true;
+        })
+    },
     goToRoom(roomId) {
       // app.config.globalProperties.$selected_pokemons = this.madePokemons.filter(v => this.checkedPokemons.some(x => x == v.id));
       // console.log(this.$selected_pokemons);
@@ -58,24 +66,26 @@ export default {
         room_id: roomId,
         player_id: this.$player_id
       }
-      this.checkedPokemons.map((v, i) => eval("req.pokemon" + (i+1) + "_id = " + v));
+      this.checkedPokemons.map((v, i) => req["pokemon" + (i+1) + "_id"] = v);
       console.log(req);
       this.$http.post("/selected-pokemon", req)
         .then(res => {
           console.log("show" + res);
           this.$router.push("/show-each");
         })
+    },
+    closeMakePokemonPop(reloadFlg) {
+      this.isShowMakePokemonPop = false;
+      if (reloadFlg) {
+        this.showSelectList = false;
+        this.getMadePokemon();
+      }
     }
   },
   created: function() {
     console.log("created");
     this.playerId = this.$player_id;
-    this.$http.get(`/made-pokemon/${this.playerId}`)
-      .then(res => {
-        console.log(res);
-        this.madePokemons = res.data;
-        this.showSelectList = true;
-      })
+    this.getMadePokemon();
   }
 }
 </script>
@@ -88,6 +98,8 @@ export default {
       border-radius: 2rem;
       width: 500px;
       padding: 10px;
+      margin-bottom: 20px;
+      
       .title {
         display: flex;
         align-items: center;

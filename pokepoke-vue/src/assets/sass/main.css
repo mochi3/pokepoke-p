@@ -14,9 +14,8 @@ button:hover {
   color: #a8b3ad;
 }
 
-.green-button {
+.submit-button {
   font-size: 1rem;
-  background-color: #a6d1bc;
   width: 14rem;
   padding: 0.5rem 1rem;
   border-radius: 2rem;
@@ -24,16 +23,30 @@ button:hover {
           box-shadow: 1px 4px 3px -2px #979d97;
 }
 
-.green-button:hover {
-  background-color: #d5e5dc;
+.submit-button.green {
+  background-color: #a6d1bc;
 }
 
-.green-button:disabled {
+.submit-button.green:hover {
+  background-color: #cfe6d8;
+}
+
+.submit-button.green:disabled {
   background-color: #989f9b;
 }
 
-.green-button:disabled:hover {
+.submit-button.green:disabled:hover {
   color: #52625b;
+}
+
+.submit-button.white:hover {
+  background-color: #f1f8f5;
+  color: #78c49e;
+}
+
+.submit-button.white:disabled {
+  background-color: #d2d9d5;
+  color: #888f8c;
 }
 
 .input-area {

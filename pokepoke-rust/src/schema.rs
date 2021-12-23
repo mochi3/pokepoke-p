@@ -25,6 +25,17 @@ table! {
 }
 
 table! {
+    m_move_updowns (id) {
+        id -> Integer,
+        move_id -> Integer,
+        target -> Integer,
+        accuracy -> Integer,
+        status_id -> Integer,
+        value -> Integer,
+    }
+}
+
+table! {
     p_base_pokemons (id) {
         id -> Integer,
         name -> Varchar,

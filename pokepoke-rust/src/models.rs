@@ -30,7 +30,8 @@ pub struct PlayerField {
     pub field_pokemon2_id: i32,
 }
 
-#[derive(Queryable, Debug, Serialize, Default)]
+#[derive(Queryable, Debug, Serialize, Deserialize, Default, Insertable)]
+#[table_name="p_made_pokemons"]
 pub struct MadePokemon {
     pub id: i32,
     pub player_id: i32,
@@ -124,6 +125,16 @@ pub struct MoveBase {
     pub kind: i32,
 }
 
+#[derive(Queryable, Debug, Default, Serialize)]
+pub struct MoveUpdown {
+    pub id: i32,
+    pub move_id: i32,
+    pub target: i32,
+    pub accuracy: i32,
+    pub status_id: i32,
+    pub value: i32,
+}
+
 #[derive(Queryable, Debug, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Player {
     pub id: i32,
@@ -196,7 +207,7 @@ pub struct ShowBattle {
     // pub turn: i32, //いらんかも
     pub player_id: i32,
     pub kind: i32,
-    pub pokemon_id: i32, //いらんかも
+    pub pokemon_id: i32, //交換時
     pub value: i32,
     pub name_string: String,
 }
@@ -234,6 +245,18 @@ pub struct BattleInfo {
 impl BattleInfo {
     pub fn new(player_id: i32, pokemon: ReturnPokemon, moving: MoveBase) -> BattleInfo {
         BattleInfo { player_id, pokemon, moving }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BattleInfo2 {
+    pub player_id: i32,
+    pub pokemon: ReturnPokemon,
+    pub command: Command,
+}
+impl BattleInfo2 {
+    pub fn new(player_id: i32, pokemon: ReturnPokemon, command: Command) -> BattleInfo2 {
+        BattleInfo2 { player_id, pokemon, command }
     }
 }
 

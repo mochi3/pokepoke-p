@@ -6,9 +6,9 @@
       <div class="pokemon-box" v-for="pokemon in formattedPokemons" :key="pokemon.made.id" :class="{field: pokemon.battle.number==fieldPokemonNumber}">
         <div class="pokemon-box-top">
           <img :src="require('@/assets/images/' + pokemon.made.base_pokemon_id + '.png')">
-          <StatusBox :pokemon="pokemon" :nowHp="pokemon.nowHp"></StatusBox>
+          <StatusBox :pokemon="pokemon" :nowHp="pokemon.now_hp"></StatusBox>
         </div>
-        <button class="green-button" :disabled="pokemon.battle.number==fieldPokemonNumber">交換する</button>
+        <button class="submit-button green" :disabled="pokemon.battle.number==fieldPokemonNumber" @click="onClickPokemonChange(pokemon.made.id)">交換する</button>
       </div>
     </div>
   </div>
@@ -34,11 +34,14 @@ export default {
   methods: {
     close() {
       console.log("close");
-      this.$emit('closePokemonChangePop');
+      this.$emit('closePokemonChangePop', 0);
     },
+    onClickPokemonChange(id) {
+      this.$emit('closePokemonChangePop', id);
+    }
   },
   created: function() {
-    this.formattedPokemons = this.pokemons.map(v => v = {made: v[1], battle: v[0], nowHp: v[1].max_hp - v[0].hp_minus});
+    this.formattedPokemons = this.pokemons.map(v => v = {made: v[1], battle: v[0], now_hp: v[1].max_hp - v[0].hp_minus});
     console.log(this.formattedPokemons);
   }
 }

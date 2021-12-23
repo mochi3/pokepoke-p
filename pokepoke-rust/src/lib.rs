@@ -125,9 +125,7 @@ pub fn search_select_pokemons (connection: &MysqlConnection, _id: Option<i32>) -
 
 pub fn search_move_bases (connection: &MysqlConnection, _id: Option<i32>) -> Vec<MoveBase> {
     let mut query = schema::m_move_bases::table.into_boxed();
-    if let Some(x) = _id {
-        query = query.filter(schema::m_move_bases::id.eq(x))
-    }
+    query = if let Some(x) = _id {query.filter(schema::m_move_bases::id.eq(x))} else {query};
     query.load::<MoveBase>(connection).expect("Error loading posts")
 }
 
@@ -159,6 +157,13 @@ pub fn search_show_battles (connection: &MysqlConnection, _room_id: Option<i32>)
 }
 
 //-----------------insert-------------------------------------
+
+pub fn insert_made_pokemon (connection: &MysqlConnection, _value: &MadePokemon) {
+    diesel::insert_into(schema::p_made_pokemons::table)
+        .values(_value)
+        .execute(connection)
+        .expect("Error saving new post");
+}
 
 pub fn insert_room (connection: &MysqlConnection, _value: &Room) {
     diesel::insert_into(schema::s_rooms::table)
@@ -231,6 +236,14 @@ pub fn return_pokemon(connection: &MysqlConnection, _made_pokemon_id: i32) -> Re
     }
 }
 
+
+pub fn change_pokemon(connection: &MysqlConnection, _player_id: i32, _made_pokemon_id: i32, mut show_battles:Vec<ShowBattle>) -> Vec<ShowBattle> {
+    show_battles.push(ShowBattle {kind: 200, player_id:_player_id, pokemon_id:_made_pokemon_id, ..Default::default()});
+
+    show_battles
+}
+
+
 pub fn check_done_turn(connection: &MysqlConnection, _room_id: i32) -> bool {
     let field = &search_fields(connection, Some(_room_id)).pop().unwrap();
     if field.turn > field.done_turn {
@@ -258,30 +271,55 @@ pub fn check_done_turn(connection: &MysqlConnection, _room_id: i32) -> bool {
 
 
 //すばやさ比較
-pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon, pokemon2: &'a ReturnPokemon)
-     -> bool {
-    pokemon1.made_pokemon.s_v > pokemon2.made_pokemon.s_v //素早さ同じときの処理かく
+pub fn check_faster<'a>(pokemon1: &'a ReturnPokemon, pokemon2: &'a ReturnPokemon) -> bool {
+    if pokemon1.made_pokemon.s_v == pokemon2.made_pokemon.s_v {
+        thread_rng().gen_range(1..=2) == 1
+    } else {
+        pokemon1.made_pokemon.s_v > pokemon2.made_pokemon.s_v
+    }
 }
 
 //バトル
-pub fn do_battle<'a>(atk_info: &BattleInfo, def_info: &BattleInfo, mut show_battles: Vec<ShowBattle>)
+pub fn do_battle<'a>(atk_info: &BattleInfo2, def_info: &BattleInfo2, moving: &MoveBase, mut show_battles: Vec<ShowBattle>)
      -> Vec<ShowBattle> {
+    let mut death_flg = false;
     //攻撃使用
-    show_battles.push(ShowBattle {kind: 100, pokemon_id: atk_info.pokemon.made_pokemon.id, player_id:atk_info.player_id, ..ShowBattle::new(&atk_info.moving.name)});
-    // ダメージ計算
-    let damage = from_pokemon_damage_calculate(&atk_info.pokemon, &def_info.pokemon, &atk_info.moving);
-    println!("{:?}", damage);
+    show_battles.push(ShowBattle {kind: 100, pokemon_id: atk_info.pokemon.made_pokemon.id, player_id:atk_info.player_id, ..ShowBattle::new(&moving.name)});
+    //命中判定
+    let hit = hit_check(&atk_info.pokemon, &def_info.pokemon, &moving);
+    if !hit { //外したとき処理終了
+        show_battles.push(ShowBattle {kind:110, pokemon_id:atk_info.pokemon.made_pokemon.id, player_id:atk_info.player_id, ..Default::default()});
+        return show_battles;
+    }
+    //ダメージ計算
+    let damage = from_pokemon_damage_calculate(&atk_info.pokemon, &def_info.pokemon, &moving);
+    println!("初期ダメージ：{:?}", damage);
     //急所
     let (critical, damage, show_battles) = check_critical_hit(&atk_info.pokemon.battle_pokemon.vital_updown, &damage, show_battles, &def_info);
     //タイプ一致
-    let (type_match, damage) = from_pokemon_check_type_match(&atk_info.pokemon, &atk_info.moving, damage);
-    // タイプ相性
-    let (type_compatibility, damage, mut show_battles) = from_pokemon_check_type_compatibility(&def_info.pokemon, &atk_info.moving, damage, show_battles, &def_info);
-    println!("{:?}", damage);
-    //ダメージ入力
-    show_battles.push(ShowBattle {kind: 101, pokemon_id:  def_info.pokemon.made_pokemon.id, value: damage, player_id:def_info.player_id, ..Default::default()});
+    let (type_match, damage) = from_pokemon_check_type_match(&atk_info.pokemon, &moving, damage);
+    //タイプ相性
+    let (type_compatibility, damage, mut show_battles) = from_pokemon_check_type_compatibility(&def_info.pokemon, &moving, damage, show_battles, &def_info);
+    println!("タイプ計算後ダメージ：{:?}", damage);
+    //ダメージ演出追加
+    show_battles.push(ShowBattle {kind: 101, pokemon_id:def_info.pokemon.made_pokemon.id, value: damage, player_id:def_info.player_id, ..Default::default()});
+    //死亡判定
+    if def_info.pokemon.made_pokemon.max_hp < def_info.pokemon.battle_pokemon.hp_minus + damage { //死亡したとき
+        show_battles.push(ShowBattle {kind: 120, pokemon_id:def_info.pokemon.made_pokemon.id, player_id:def_info.player_id, ..Default::default()});
+        death_flg = true;
+    }
 
     show_battles
+}
+
+fn hit_check(atk_pokemon: &ReturnPokemon, def_pokemon: &ReturnPokemon, moving: &MoveBase) -> bool {
+    let rand = thread_rng().gen_range(0..=99);
+    let mut hit_rank = 1.0;
+    if moving.accuracy != 30 {
+        hit_rank = check_hit_rank(atk_pokemon.battle_pokemon.acc_updown - atk_pokemon.battle_pokemon.avoid_updown);
+    };
+    println!("{:?}が{:?}未満かで命中計算", rand, (moving.accuracy as f32 * hit_rank) as i32);
+    rand < ((moving.accuracy as f32 * hit_rank) as i32)
 }
 
 fn from_pokemon_damage_calculate(atk_pokemon: &ReturnPokemon, def_pokemon: &ReturnPokemon, moving: &MoveBase) -> i32 {
@@ -299,7 +337,7 @@ fn damage_calculate(atk_level: &i32, atk_value: &i32, def_value: &i32, move_powe
 }
 
 //急所
-fn check_critical_hit(rank: &i32, damage: &i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo) -> (bool, i32, Vec<ShowBattle>) {
+fn check_critical_hit(rank: &i32, damage: &i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo2) -> (bool, i32, Vec<ShowBattle>) {
     let rand = thread_rng().gen_range(1..=24);
     // let rand = 1; //デバッグ用:急所にあてる
     println!("急所：{:?}", rand);
@@ -321,7 +359,7 @@ fn from_pokemon_check_type_match(atk_pokemon: &ReturnPokemon, moving: &MoveBase,
 }
 
 //タイプ相性前処理
-fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo)
+fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon, moving: &MoveBase, damage: i32, mut show_battles: Vec<ShowBattle>, def_info: &BattleInfo2)
      -> (f32, i32, Vec<ShowBattle>) {
     let type_compatibility = check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type1_id)*check_type_compatibility(&moving.type_id, &def_pokemon.base_pokemon.type2_id);
     let _kind = match type_compatibility {
@@ -335,6 +373,25 @@ fn from_pokemon_check_type_compatibility(def_pokemon: &ReturnPokemon, moving: &M
     }
     (type_compatibility, (damage as f32 * type_compatibility) as i32, show_battles)
 }
+
+//命中ランク
+fn check_hit_rank(hit_rank: i32) -> f32 {
+    match hit_rank {
+        -5 => 3.0/8.0,
+        -4 => 3.0/7.0,
+        -3 => 1.0/2.0,
+        -2 => 3.0/5.0,
+        -1 => 3.0/4.0,
+        0 => 1.0,
+        1 => 4.0/3.0,
+        2 => 5.0/3.0,
+        3 => 2.0,
+        4 => 7.0/3.0,
+        5 => 8.0/3.0,
+        _ => if hit_rank > 6 {3.0} else {1.0/3.0}
+    }
+}
+
 
 //タイプ相性
 fn check_type_compatibility(atk_type: &i32, def_type: &i32) -> f32 {

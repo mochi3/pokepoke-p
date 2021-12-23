@@ -14,8 +14,8 @@
         </div>
       </div>
       <div class="login-area">
-        <button class="login-button green-button" @click="doLogin()">ログイン</button>
-        <button class="new-login-button green-button">新規作成してログイン</button>
+        <button class="login-button submit-button green" @click="doLogin()">ログイン</button>
+        <button class="new-login-button submit-button green">新規作成してログイン</button>
       </div>
     </div>
   </div>

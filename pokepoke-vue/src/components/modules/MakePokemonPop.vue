@@ -9,7 +9,7 @@
         </div>
         <div class="basic-datas">
           <label for="base-name">ポケモン名
-            <input type="text" id="search" placeholder="検索" v-model="searchPokemonTerm" @focus="showSearchPokemon=true">
+            <input type="text" id="search" placeholder="検索" v-model="searchPokemonTerm" @input="showSearchPokemon=true">
             <ul v-if="searchPokemons.length && showSearchPokemon">
               <li v-for="pokemon in searchPokemons" :key="pokemon.id" @click="onClickPokemonName(pokemon)">
                 {{ pokemon.name }}
@@ -21,13 +21,13 @@
           </label>
           <div>
             <label for="ability">とくせい
-              <select id="ability" v-if="abilities.length">
-                <option v-for="ability in abilities" :key="ability.id">{{ability.name}}</option>
+              <select id="ability" v-if="abilities.length" v-model="ability">
+                <option v-for="ability in abilities" :key="ability.id" :value="ability.id">{{ability.name}}</option>
               </select>
             </label>
             <label for="ability">性別
-              <select id="gender" v-if="genders.length">
-                <option v-for="gender in genders" :key="gender.id">{{gender.name}}</option>
+              <select id="gender" v-if="genders.length" v-model="gender">
+                <option v-for="gender in genders" :key="gender.id" :value="gender.id">{{gender.name}}</option>
               </select>
             </label>
           </div>
@@ -49,7 +49,7 @@
             <p>{{sta.name}}</p>
             <input type="number" v-model="iv[sta.id]" min="0" max="31">
             <button @click="ev[sta.id]=0">0</button>
-            <input type="number" v-model="ev[sta.id]" min="0" max="255">
+            <input type="number" v-model="ev[sta.id]" min="0" max="252">
             <button @click="ev[sta.id]=252">252</button>
             <p>{{status(sta.id)}}</p>
           </div>
@@ -58,7 +58,7 @@
       <div class="make-area move-item">
         <div class="move">
           <label v-for="n of 4" :key="n">わざ{{n}}
-            <input type="text" placeholder="検索" v-model="searchMoveTerms[n-1]" @focus="showSearchMoves[n-1]=true">
+            <input type="text" placeholder="検索" v-model="searchMoveTerms[n-1]" @input="showSearchMoves[n-1]=true">
             <ul v-if="searchMoves(n).length && showSearchMoves[n-1]">
               <li v-for="move in searchMoves(n)" :key="move.id" @click="onClickMove(n, move)">
                 {{ move.name }}
@@ -75,7 +75,7 @@
               </li>
             </ul>
           </label>
-          <button class="green-button">作成</button>
+          <button class="submit-button green" @click="onClickSubmit()" :disabled="submitDisabled">作成</button>
         </div>
       </div>
 
@@ -102,7 +102,9 @@ export default {
       natures: const_modules.NATURES,
       STATUS: const_modules.STATUS,
       genders: [],
+      gender: null,
       abilities: [],
+      ability: null,
       baseName: '',
       basePokemons: [],
       searchPokemonTerm: '',
@@ -118,15 +120,16 @@ export default {
       searchMoveTerms: new Array(4).fill(''),
       showSearchMoves: new Array(4).fill(true),
       baseMoves: [{id:1, name: "たいあたり"}, {id:2, name: "ころがる"}],
+      confirmMoveIds: new Array(4).fill(0),
       searchItemTerm: '',
       showSearchItem: true,
-      baseItems: [{id: 1, name: "あかいいと"}, {id: 2, name: "こだわりハチマキ"}]
+      baseItems: [{id: 1, name: "あかいいと"}, {id: 2, name: "こだわりハチマキ"}],
+      confirmItemId: 0,
     }
   },
   methods: {
     close() {
-      console.log("close");
-      this.$emit('closeMakePokemonPop');
+      this.$emit('closeMakePokemonPop', false);
     },
     returnBasePokemons() {
       return ['aaa','bbb'];
@@ -135,19 +138,51 @@ export default {
       this.searchPokemonTerm = pokemon.name;
       this.showSearchPokemon = false;
       this.confirmPokemon = pokemon;
-      this.abilities = const_modules.ABILITIES.filter(v => v.id == pokemon.ability1_id || v.id == pokemon.ability2_id || v.id == pokemon.ability3_id);
       this.genders = const_modules.GENDERS.filter(v => (pokemon.gender_flg == 0 && v.id != 3) || (pokemon.gender_flg == 1 && v.id == 3));
-      this.base_v = this.STATUS.map(v => eval("pokemon." + v.value + "_base"));
+      this.abilities = const_modules.ABILITIES.filter(v => v.id == pokemon.ability1_id || v.id == pokemon.ability2_id || v.id == pokemon.ability3_id);
+      this.base_v = this.STATUS.map(v => pokemon[v.value + "_base"]);
+      this.gender = this.genders[0].id;
+      this.ability = this.abilities[0].id;
       // this.v = this.STATUS.map(v => this.calculateStatus(v.id));
     },
     onClickMove(n, move) {
       this.searchMoveTerms[n-1] = move.name;
       this.showSearchMoves[n-1] = false;
+      this.confirmMoveIds[n-1] = move.id;
     },
     onClickItem(item) {
       this.searchItemTerm = item.name;
       this.showSearchItem = false;
-      console.log("false");
+      this.confirmItemId = item.id;
+    },
+    onClickSubmit() {
+      let madePokemon = {
+        id: 0, 
+        player_id: this.$player_id,
+        base_pokemon_id: this.confirmPokemon.id,
+        nickname: this.nickname != ''? this.nickname: this.confirmPokemon.name,
+        level: this.level,
+        gender_id: this.gender,
+        ability_id: this.ability,
+        nature_id: this.nature.id,
+        item_id: this.searchItemTerm == ''? 0: this.confirmItemId,
+      };
+      console.log(this.confirmMoveIds[0]);
+      [1,2,3,4].map(v => madePokemon["move" + v + "_id"] = this.confirmMoveIds[v-1]);
+      this.STATUS.map(v => {
+        madePokemon[v.value + "_iv"] = this.iv[v.id];
+        madePokemon[v.value + "_ev"] = this.ev[v.id];
+        if (v.value=="h") {
+          madePokemon.max_hp = this.status(v.id)
+        } else {
+          madePokemon[v.value + "_v"] = this.status(v.id);
+        }
+      })
+      this.$http.post("/make-pokemon", madePokemon)
+        .then(res => {
+          console.log(res);
+          this.$emit('closeMakePokemonPop', true);
+        })
     },
     // onClickEvInput(value) {
 
@@ -166,7 +201,8 @@ export default {
     this.$http.get("/make-pokemon")
       .then(res => {
         console.log(res);
-        this.basePokemons = res.data;
+        this.basePokemons = res.data[0];
+        this.baseMoves = res.data[1];
       })
   },
   computed: {
@@ -209,6 +245,11 @@ export default {
           return Math.floor((Math.floor((this.base_v[id]*2+this.iv[id]+Math.floor(this.ev[id]/4))*this.level/100)+5)*natureTimes)
         }
       }
+    },
+    submitDisabled: function() {
+      return !(this.confirmPokemon.id != 0 && 
+        this.confirmMoveIds.some(v => v!=0) && 
+        this.ev.reduce((sum, ele) => sum + ele, 0) <= 510)
     }
   },
   watch: {
@@ -217,26 +258,26 @@ export default {
     //   this.showSearchPokemon = true;
     // },
     level: function() {
-        if (this.level <= 50 && this.level >= 0) {
+        if (this.level <= 50 && this.level >= 1) {
           return
         }
-        this.level = this.level > 50 ? 50: (this.level < 0 ? 0: this.level)
+        this.level = this.level > 50 ? 50: (this.level < 1 ? 1: this.level)
     },
     iv: {
       handler() {
         if (this.iv.every(v => v <= 31 && v >= 0)) {
           return
         }
-        this.ev = this.iv.map(v => v > 31 ? 31: (v < 0 ? 0: v))
+        this.iv = this.iv.map(v => v > 31 ? 31: (v < 0 ? 0: v))
       },
       deep: true
     },
     ev: {
       handler() {
-        if (this.ev.every(v => v <= 255 && v >= 0)) {
+        if (this.ev.every(v => v <= 252 && v >= 0)) {
           return
         }
-        this.ev = this.ev.map(v => v > 255 ? 255: (v < 0 ? 0: v))
+        this.ev = this.ev.map(v => v > 252 ? 252: (v < 0 ? 0: v))
       },
       deep: true
     },

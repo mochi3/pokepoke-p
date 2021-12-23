@@ -7,23 +7,23 @@
     <div class="battle-area">
       <div class="field-area">
         <div class="pokemon-area my" v-if="showMyPokemonArea">
-          <StatusBox :pokemon="my_field_pokemon" :nowHp="my_hp_new"></StatusBox>
+          <StatusBox :pokemon="my_field_pokemon" :nowHp="my_field_pokemon.now_hp"></StatusBox>
           <div class="pokemon-shadow"></div>
-          <img :src="require('@/assets/images/' + my_field_pokemon.base.id + '.png')">
+          <img :src="require('@/assets/images/' + my_field_pokemon.base.id + '.png')" :class="{death: my_field_pokemon.death}">
         </div>
         <div class="pokemon-area my" v-if="!showMyPokemonArea">
         </div>
         <div class="pokemon-area your" v-if="showYourPokemonArea">
-          <StatusBox :pokemon="your_field_pokemon" :nowHp="your_hp_new"></StatusBox>
+          <StatusBox :pokemon="your_field_pokemon" :nowHp="your_field_pokemon.now_hp"></StatusBox>
           <div class="pokemon-shadow"></div>
-          <img :src="require('@/assets/images/' + your_field_pokemon.base.id + '.png')">          
+          <img :src="require('@/assets/images/' + your_field_pokemon.base.id + '.png')" :class="{death: your_field_pokemon.death}">          
         </div>
       </div>
       <!-- メッセージ欄 -->
       <div class="message-area">
         <div class="left-message-box">
           <div class="moves-area" v-if="showMovesArea">
-            <button v-for="move in my_field_pokemon.moves" :key="move.id" @click="doMove(move.id)" v-bind:style="{ backgroundColor: move.type_color }">
+            <button v-for="move in my_field_pokemon.moves" :key="move.id" @click="onClickMove(move.id)" v-bind:style="{ backgroundColor: move.type_color }">
               <div class="move-name">{{move.name}}</div>
               <div class="move-under">
                 <div class="move-type">{{move.type_name}}</div>
@@ -52,6 +52,7 @@
 import BattlePokemonChangePop from '@/components/modules/BattlePokemonChangePop'
 import StatusBox from '@/components/modules/StatusBox'
 import const_modules from "@/const-data.js";
+import { toRaw } from 'vue';
 
 export default {
   name: 'Battle',
@@ -70,12 +71,15 @@ export default {
       showMyPokemonArea: false,
       showYourPokemonArea: false,
       isShowPokemonChangePop: false,
+      deathFlg: false,
       first_commands: const_modules.COMMANDS,
       // moves: [],
-      my_field_pokemon: {},
-      my_hp_new: 0,
-      your_field_pokemon: {},
-      your_hp_new: 0,
+      my_field_pokemon: {now_hp: 0},
+      // my_hp_new: 0,
+      myPokemonDeath: false,
+      your_field_pokemon: {now_hp: 0},
+      // your_hp_new: 0,
+      yourPokemonDeath: false,
       narration: "",
       forPokemonChangePopValue: [],
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -104,7 +108,7 @@ export default {
     formatPokemonForDisplay(pokemon) {
       //技名、タイプ名、色いれる
       pokemon.moves.map((v,i) => {
-        v.remain_pp = v.max_pp - eval("pokemon.battle_pokemon.move" + (i+1) + "_pp_minus");
+        v.remain_pp = v.max_pp - pokemon.battle_pokemon["move" + (i+1) + "_pp_minus"];
         v.type_name = const_modules.TYPES.filter(t => t.id == v.type_id)[0].name;
         v.type_color = const_modules.TYPES.filter(t => t.id == v.type_id)[0].color;
       });
@@ -115,6 +119,7 @@ export default {
         made: pokemon.made_pokemon,
         battle: pokemon.battle_pokemon,
         moves: pokemon.moves,
+        now_hp: pokemon.made_pokemon.max_hp - pokemon.battle_pokemon.hp_minus
       };
       return field_pokemon;
     },
@@ -135,17 +140,26 @@ export default {
       }
     },
     openPokemonChangePop() { //ポケモン交換
-      this.$http.get(`/battle-change-pokemons/${this.$player_id}`) //ルームID,プレーヤーID,コマンドID,技ID
+      this.$http.get(`/battle-change-pokemons/${this.$player_id}`)
         .then(res => {
           console.log(res);
           this.forPokemonChangePopValue = res.data;
           this.isShowPokemonChangePop = true;
         })
     },
-    closePokemonChangePop() {
+    closePokemonChangePop(selectId) {
+      if (this.deathFlg && !selectId) { //死んでる時は選択しないと閉じれない
+        return;
+      }
       this.isShowPokemonChangePop = false;
+      if (selectId) { //交換ポケモン選択時
+        this.postBattle(2, selectId)
+      }
     },
-    doMove(id) { //技選択
+    onClickMove(id) { //技選択
+      this.postBattle(1, id);
+    },
+    postBattle(command_type, command_id) {
       this.showButtonArea = false;
       this.showMovesArea = false;
       this.narration = '通信待機中...';
@@ -154,10 +168,10 @@ export default {
         room_id: 14,
         player_id: this.$player_id,
         turn: 0,
-        command_type: 1,
-        command_id: id,
+        command_type: command_type,
+        command_id: command_id,
       }
-      this.$http.post(`/do-command/14/${this.$player_id}`, req) //ルームID,プレーヤーID,コマンドID,技ID
+      this.$http.post(`/do-command/14/${this.$player_id}`, req) 
         .then(res => {
           console.log(res);
           this.doShowBattle(res.data);
@@ -183,28 +197,55 @@ export default {
       this.showButtonArea = true;
       this.narration = `${this.my_field_pokemon.made.nickname} はどうする？`;
     },
-    async doShowBattle(showBattles) {
+    async doShowBattle(data) {
+      let showBattles = data[0];
+      let changePokemons = data[1];
       await this.sleep(1000);
       for (let showBattle of showBattles) {
-        let pokemon = showBattle.player_id == this.$player_id? this.my_field_pokemon: this.your_field_pokemon;
+        let pokemon = showBattle.player_id == this.$player_id? toRaw(this.my_field_pokemon): toRaw(this.your_field_pokemon);
         switch (showBattle.kind) {
           case 100: //技使うメッセージ
             await this.sleep(1000);
             this.narration = `${pokemon.made.nickname} の ${showBattle.name_string} ！`;
             break;
-          case 101: { //HP減らす処理
+          case 101:  //HP減らす処理
             await this.sleep(1000);
-            if (showBattle.player_id == this.$player_id) {
-              this.my_hp_new = (this.my_hp_new - showBattle.value > 0)? this.my_hp_new - showBattle.value: 0;
-            } else {
-              this.your_hp_new = (this.your_hp_new - showBattle.value > 0)? this.your_hp_new - showBattle.value: 0;
-            }
+            pokemon.now_hp = (pokemon.now_hp - showBattle.value > 0)? pokemon.now_hp - showBattle.value: 0;
+            await this.sleep(500);
             break;
-          }
           case 102: //急所メッセージ
             await this.sleep(1000);
             this.narration = `急所に当たった！`;
             break;
+          case 110: //技外し
+            await this.sleep(1000);
+            this.narration = `しかし ${pokemon.made.nickname} のこうげきは外れた！`;
+            break;
+          case 120: //死亡
+            await this.sleep(1000);
+            this.narration = ` ${pokemon.made.nickname} は倒れた！`;
+            pokemon.death = true;
+            if (pokemon == this.my_field_pokemon) { //自分のポケモンが倒れた
+              await this.sleep(1000);
+              this.openPokemonChangePop();
+              this.deathFlg = true;
+            } else { //相手のポケモンが倒れた
+              this.$http.get(`/wait-your-death/14/${this.$player_id}`) //相手のレスポンスがあるまで向こうで待機
+                .then(res => {
+                  console.log(res);
+                })
+            }
+            break;
+          case 200: //交換
+            {await this.sleep(1000);
+            let changePokemon = changePokemons.filter(v => v.made_pokemon.id == showBattle.pokemon_id)[0];
+            this.narration = (showBattle.player_id == this.$player_id)? `いけ！ ${changePokemon.made_pokemon.nickname} ！`: `相手は ${changePokemon.made_pokemon.nickname} をくり出してきた！`;
+            pokemon.death = true;
+            await this.sleep(500);
+            Object.assign(pokemon, this.formatPokemonForDisplay(changePokemon));//再代入すると新参照になってしまうため
+            await this.sleep(500);
+            pokemon.death = false;
+          }
         }
       }
       await this.sleep(1000);
@@ -218,8 +259,6 @@ export default {
         console.log(res);
         this.my_field_pokemon = this.formatPokemonForDisplay(res.data[0]);
         this.your_field_pokemon = this.formatPokemonForDisplay(res.data[1]);
-        this.my_hp_new = this.my_field_pokemon.made.max_hp - this.my_field_pokemon.battle.hp_minus;
-        this.your_hp_new = this.your_field_pokemon.made.max_hp - this.your_field_pokemon.battle.hp_minus;
         this.firstTurn();
       })
   }
@@ -254,6 +293,19 @@ export default {
         img {
           width: 20vw;
           z-index: 3;
+          &.death {
+            animation: death 1s linear 0s;
+            animation-fill-mode: forwards;
+          }
+        }
+        @keyframes death {
+          0% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            display:none;
+          }
         }
         .pokemon-area {
           width: 50%;
@@ -263,7 +315,7 @@ export default {
           position: relative;
           // animation: move 1s infinite;
         }
-        @keyframes move{
+        @keyframes move {
           0% {
             padding: 0 0;
           }

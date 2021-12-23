@@ -1,7 +1,7 @@
 $green-colors: (
     base: #7ba390,
     light: #a6d1bc,
-    light-hover: #d5e5dc,
+    light-hover: #cfe6d8,
     light-disabled: #989f9b,
     light-gray: #b9cbc2,
     // dark: #636866,
@@ -28,21 +28,37 @@ button {
     }
 }
 
-.green-button {
+.submit-button {
     font-size: 1rem;
-    background-color: green(light);
     width: 14rem;
     padding: 0.5rem 1rem;
     border-radius: 2rem;
     box-shadow: 1px 4px 3px -2px #979d97;
-    &:hover {
-        background-color: green(light-hover);
-    }
-    &:disabled {
-        background-color: green(light-disabled);
+
+    &.green {
+        background-color: green(light);
         &:hover {
-            color: green(dark);
+            background-color: green(light-hover);
         }
+        &:disabled {
+            background-color: green(light-disabled);
+            &:hover {
+                color: green(dark);
+            }
+        }    
+    }
+    &.white {
+        &:hover {
+            background-color: #f1f8f5;
+            color: #78c49e;
+        }
+        &:disabled {
+            background-color: #d2d9d5;
+            color: #888f8c;
+            &:hover {
+                // color: green(dark);
+            }
+        }    
     }
 }
 
